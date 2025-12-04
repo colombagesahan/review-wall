@@ -37,6 +37,41 @@
         </div>
     </div>
 
+    <!-- 2.5 SUPER ADMIN DASHBOARD (Only visible to you) -->
+<div id="view-admin" class="dashboard hidden">
+    <aside class="sidebar">
+        <div class="brand">👑 Super Admin</div>
+        <div class="menu-btn active">Overview</div>
+        <button onclick="window.logout()" class="menu-btn logout">Logout</button>
+    </aside>
+    <main class="main">
+        <h1>Platform Stats</h1>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">TOTAL USERS</div>
+                <div class="stat-val" id="admin-users">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">TOTAL REVIEWS</div>
+                <div class="stat-val" id="admin-reviews">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">LICENSES USED</div>
+                <div class="stat-val" id="admin-licenses">0</div>
+            </div>
+        </div>
+        <div style="margin-top:40px;">
+            <h3>Quick Links</h3>
+            <a href="generate.html" target="_blank" class="btn btn-primary" style="display:inline-block; width:auto; text-decoration:none; margin-top:10px;">
+                Open Code Generator
+            </a>
+            <a href="https://console.firebase.google.com/" target="_blank" class="btn btn-outline" style="display:inline-block; width:auto; text-decoration:none; margin-top:10px; margin-left:10px;">
+                Open Firebase Database
+            </a>
+        </div>
+    </main>
+</div>
+    
     <!-- 3. DASHBOARD -->
     <div id="view-dash" class="dashboard hidden">
         <aside class="sidebar" id="sidebar">
