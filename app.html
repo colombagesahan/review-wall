@@ -429,7 +429,41 @@
         </div>
         <div id="wall-list" class="masonry"></div>
     </div>
-
+<!-- 2.5 SUPER ADMIN DASHBOARD -->
+    <div id="view-admin" class="dashboard hidden">
+        <aside class="sidebar">
+            <div class="brand">👑 Super Admin</div>
+            <button onclick="location.reload()" class="menu-btn active">Overview</button>
+            <button onclick="window.logout()" class="menu-btn logout">Logout</button>
+        </aside>
+        <main class="main">
+            <h1>Platform Stats</h1>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">TOTAL USERS</div>
+                    <div class="stat-val" id="admin-users">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">TOTAL REVIEWS</div>
+                    <div class="stat-val" id="admin-reviews">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">LICENSES USED</div>
+                    <div class="stat-val" id="admin-licenses">0</div>
+                </div>
+            </div>
+            <div style="margin-top:40px;">
+                <h3>Quick Actions</h3>
+                <a href="generate.html" target="_blank" class="btn" style="display:inline-block; width:auto; text-decoration:none; margin-top:10px;">
+                    Generate AppSumo Codes
+                </a>
+                <br>
+                <a href="https://console.firebase.google.com/" target="_blank" class="btn btn-outline" style="display:inline-block; width:auto; text-decoration:none; margin-top:10px;">
+                    Open Firebase Database
+                </a>
+            </div>
+        </main>
+    </div>
     <script type="module" src="app.js"></script>
 </body>
 </html>
