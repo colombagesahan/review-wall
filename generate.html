@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AppSumo Code Generator</title>
+    <style>
+        body { font-family: sans-serif; padding: 50px; text-align: center; }
+        button { padding: 15px 30px; font-size: 20px; cursor: pointer; background: #2563eb; color: white; border: none; border-radius: 5px; }
+        button:disabled { background: #ccc; }
+        #log { margin-top: 20px; color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>AppSumo License Generator</h1>
+    <p>This will generate 1,000 codes, save them to Firebase, and download a CSV.</p>
+    <button id="btn" onclick="startGeneration()">GENERATE 1,000 CODES</button>
+    <div id="log"></div>
+
+    <script type="module">
+        // 1. IMPORT FIREBASE DIRECTLY
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, writeBatch, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // 2. PASTE YOUR KEYS HERE (Replace the dots)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUjzMFao9BS3uXBOW3qYrLVqHaGn8qIk4",
+            authDomain: "onlineshop-30cd1.firebaseapp.com",
+            projectId: "onlineshop-30cd1",
+            storageBucket: "onlineshop-30cd1.firebasestorage.app",
+            messagingSenderId: "818252574868",
+            appId: "1:818252574868:web:8dd36825db589a886cc481"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 3. GENERATOR LOGIC
+        window.startGeneration = async () => {
+            const btn = document.getElementById('btn');
+            const log = document.getElementById('log');
+            
+            btn.disabled = true;
+            btn.innerText = "Working...";
+            log.innerText = "Starting generation... Please wait.";
+
+            const allCodes = [];
+            const batchSize = 500; // Firestore limit per batch
+            const totalCodes = 1000;
+            
+            // Loop to handle batches
+            for (let i = 0; i < totalCodes; i += batchSize) {
+                const batch = writeBatch(db);
+                
+                for (let j = 0; j < batchSize; j++) {
+                    // Generate Random Code: SUMO-ABCD-1234
+                    const part1 = Math.random().toString(36).substring(2, 6).toUpperCase();
+                    const part2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+                    const code = `SUMO-${part1}-${part2}`;
+                    
+                    allCodes.push(code);
+                    
+                    // Add to Database Batch
+                    const ref = doc(collection(db, "licenses"));
+                    batch.set(ref, {
+                        code: code,
+                        status: "active", // active = ready to use
+                        createdAt: Date.now()
+                    });
+                }
+                
+                await batch.commit(); // Save this batch
+                log.innerText = `Saved ${Math.min(i + batchSize, totalCodes)} codes to Firebase...`;
+            }
+
+            // 4. DOWNLOAD CSV FOR APPSUMO
+            let csvContent = "data:text/csv;charset=utf-8," + allCodes.join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "appsumo_codes.csv");
+            document.body.appendChild(link);
+            link.click();
+
+            log.innerText = "SUCCESS! 1,000 Codes saved to DB and CSV downloaded.";
+            btn.innerText = "Done";
+        };
+    </script>
+</body>
+</html>
