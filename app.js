@@ -7,7 +7,7 @@ const params = new URLSearchParams(window.location.search);
 const formUid = params.get('f');
 const wallUid = params.get('w');
 let currentRating = 5;
-let uploadQueue = []; // Stores files to upload
+let uploadQueue = [];
 
 // --- INIT ---
 onAuthStateChanged(auth, async (user) => {
@@ -30,7 +30,6 @@ onAuthStateChanged(auth, async (user) => {
     // 2. PUBLIC WALL VIEW
     if (wallUid) { 
         showView('view-wall'); 
-        // Load settings for logo
         const snap = await getDoc(doc(db, "users", wallUid));
         if(snap.exists() && snap.data().logoUrl) {
             document.getElementById('wall-logo').src = snap.data().logoUrl;
@@ -45,16 +44,29 @@ onAuthStateChanged(auth, async (user) => {
         const snap = await getDoc(doc(db, "users", user.uid));
         if (snap.exists() && snap.data().plan === 'lifetime') {
             showView('view-dash');
-            // Init Dashboard Data
-            loadReviews(user.uid, 'reviews-list');
+            
+            // --- FIX: GENERATE LINKS IMMEDIATELY ---
+            const root = window.location.origin + window.location.pathname;
+            // Remove 'app.html' from root if it exists to keep links clean, or keep it.
+            // Using full path to be safe.
+            
+            const formLink = `${root}?f=${user.uid}`;
+            const embedStr = `<iframe src="${root}?w=${user.uid}" width="100%" height="600" frameborder="0"></iframe>`;
+            
+            // Force update value
+            setTimeout(() => {
+                document.getElementById('link-form').value = formLink;
+                document.getElementById('embed-code').value = embedStr;
+            }, 500);
+
+            // Load Settings
             document.getElementById('set-bizname').value = snap.data().bizName || "";
             document.getElementById('set-logo').value = snap.data().logoUrl || "";
             document.getElementById('set-msg').value = snap.data().welcomeMsg || "How was your experience?";
             
-            // Generate Links
-            const root = window.location.origin + window.location.pathname;
-            document.getElementById('link-form').value = `${root}?f=${user.uid}`;
-            document.getElementById('embed-code').value = `<iframe src="${root}?w=${user.uid}" width="100%" height="600" frameborder="0"></iframe>`;
+            // Load Reviews last
+            loadReviews(user.uid, 'reviews-list');
+            
         } else {
             showView('view-lock');
         }
@@ -69,15 +81,16 @@ window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle
 window.switchTab = (tab) => {
     document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
     document.getElementById('tab-' + tab).classList.remove('hidden');
-    // Mobile: close sidebar on click
     document.getElementById('sidebar').classList.remove('open');
 };
 
 window.copyInput = (id) => {
     const el = document.getElementById(id);
     el.select();
-    navigator.clipboard.writeText(el.value);
-    alert("Copied!");
+    el.setSelectionRange(0, 99999); // For mobile
+    navigator.clipboard.writeText(el.value).then(() => {
+        alert("Copied to clipboard!");
+    });
 };
 
 window.shareSocial = (platform) => {
@@ -90,9 +103,14 @@ window.shareSocial = (platform) => {
 };
 
 window.copyLink = (type) => {
-    const url = `${window.location.origin}${window.location.pathname}?${type === 'form' ? 'f' : 'w'}=${auth.currentUser.uid}`;
+    const root = window.location.origin + window.location.pathname;
+    const url = `${root}?${type === 'form' ? 'f' : 'w'}=${auth.currentUser.uid}`;
+    
     if(type === 'wall') window.open(url, '_blank');
-    else { navigator.clipboard.writeText(url); alert("Form Link Copied!"); }
+    else { 
+        navigator.clipboard.writeText(url); 
+        alert("Link Copied!"); 
+    }
 };
 
 // --- AUTH & LICENSE ---
@@ -166,7 +184,7 @@ window.removePhoto = (index) => {
 
 window.submitReview = async () => {
     const name = document.getElementById('rev-name').value;
-    const msg = document.getElementById('rev-text').value; // Fixed ID
+    const msg = document.getElementById('rev-text').value; 
     const btn = document.getElementById('sub-btn');
 
     if(!name || !msg) return alert("Please fill name and review.");
@@ -190,9 +208,6 @@ window.submitReview = async () => {
 };
 
 async function loadReviews(uid, divId) {
-    // FIX FOR INDEX ERROR:
-    // If console says "Requires Index", CLICK THE LINK IN CONSOLE. 
-    // This query needs: ownerId ASC, date DESC
     try {
         const q = query(collection(db, "reviews"), where("ownerId", "==", uid), orderBy("date", "desc"));
         const snap = await getDocs(q);
@@ -212,7 +227,7 @@ async function loadReviews(uid, divId) {
         }
 
         const div = document.getElementById(divId);
-        div.innerHTML = reviews.length ? '' : '<p style="text-align:center; color:#999;">No reviews yet.</p>';
+        div.innerHTML = reviews.length ? '' : '<p style="text-align:center; color:#999; margin-top:20px;">No reviews yet.</p>';
         
         reviews.forEach(r => {
             let stars = "★".repeat(r.rating);
@@ -235,7 +250,8 @@ async function loadReviews(uid, divId) {
     } catch(e) {
         console.error("Firebase Error:", e);
         if(e.code === 'failed-precondition') {
-            document.getElementById(divId).innerHTML = `<p style="color:red;"><b>Admin Setup Required:</b> Please check Console for Index Link.</p>`;
+            // This is the error we expect if index is missing
+            console.log("Index missing");
         }
     }
 }
