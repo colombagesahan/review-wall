@@ -11,7 +11,7 @@ let uploadQueue = [];
 
 // --- INIT ---
 onAuthStateChanged(auth, async (user) => {
-    // 1. PUBLIC FORM VIEW
+    // 1. PUBLIC FORM
     if (formUid) { 
         showView('view-form');
         const snap = await getDoc(doc(db, "users", formUid));
@@ -27,7 +27,7 @@ onAuthStateChanged(auth, async (user) => {
         return; 
     }
     
-    // 2. PUBLIC WALL VIEW
+    // 2. PUBLIC WALL
     if (wallUid) { 
         showView('view-wall'); 
         const snap = await getDoc(doc(db, "users", wallUid));
@@ -45,28 +45,16 @@ onAuthStateChanged(auth, async (user) => {
         if (snap.exists() && snap.data().plan === 'lifetime') {
             showView('view-dash');
             
-            // --- FIX: GENERATE LINKS IMMEDIATELY ---
+            // Generate Links
             const root = window.location.origin + window.location.pathname;
-            // Remove 'app.html' from root if it exists to keep links clean, or keep it.
-            // Using full path to be safe.
-            
-            const formLink = `${root}?f=${user.uid}`;
-            const embedStr = `<iframe src="${root}?w=${user.uid}" width="100%" height="600" frameborder="0"></iframe>`;
-            
-            // Force update value
-            setTimeout(() => {
-                document.getElementById('link-form').value = formLink;
-                document.getElementById('embed-code').value = embedStr;
-            }, 500);
+            document.getElementById('link-form').value = `${root}?f=${user.uid}`;
+            document.getElementById('embed-code').value = `<iframe src="${root}?w=${user.uid}" width="100%" height="600" frameborder="0"></iframe>`;
 
-            // Load Settings
+            // Load Data
             document.getElementById('set-bizname').value = snap.data().bizName || "";
             document.getElementById('set-logo').value = snap.data().logoUrl || "";
             document.getElementById('set-msg').value = snap.data().welcomeMsg || "How was your experience?";
-            
-            // Load Reviews last
             loadReviews(user.uid, 'reviews-list');
-            
         } else {
             showView('view-lock');
         }
@@ -75,42 +63,25 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- NAVIGATION & UI ---
+// --- NAVIGATION ---
 window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
-
 window.switchTab = (tab) => {
     document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
     document.getElementById('tab-' + tab).classList.remove('hidden');
     document.getElementById('sidebar').classList.remove('open');
 };
-
 window.copyInput = (id) => {
     const el = document.getElementById(id);
     el.select();
-    el.setSelectionRange(0, 99999); // For mobile
-    navigator.clipboard.writeText(el.value).then(() => {
-        alert("Copied to clipboard!");
-    });
+    el.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(el.value);
+    alert("Copied!");
 };
-
-window.shareSocial = (platform) => {
-    const url = document.getElementById('link-form').value;
-    const text = "Please leave us a review!";
-    let link = "";
-    if(platform === 'wa') link = `https://wa.me/?text=${encodeURIComponent(text + " " + url)}`;
-    if(platform === 'fb') link = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    window.open(link, '_blank');
-};
-
 window.copyLink = (type) => {
     const root = window.location.origin + window.location.pathname;
     const url = `${root}?${type === 'form' ? 'f' : 'w'}=${auth.currentUser.uid}`;
-    
     if(type === 'wall') window.open(url, '_blank');
-    else { 
-        navigator.clipboard.writeText(url); 
-        alert("Link Copied!"); 
-    }
+    else { navigator.clipboard.writeText(url); alert("Link Copied!"); }
 };
 
 // --- AUTH & LICENSE ---
@@ -127,7 +98,6 @@ window.handleAuth = async () => {
         } catch(err) { alert(err.message); }
     }
 };
-
 window.redeemCode = async () => {
     const code = document.getElementById('license-code').value.trim().toUpperCase();
     const q = query(collection(db, "licenses"), where("code", "==", code));
@@ -138,30 +108,42 @@ window.redeemCode = async () => {
         location.reload();
     } else { alert("Invalid Code"); }
 };
-
 window.logout = () => signOut(auth).then(()=>location.reload());
-
 window.saveSettings = async () => {
     await updateDoc(doc(db, "users", auth.currentUser.uid), {
         bizName: document.getElementById('set-bizname').value,
         logoUrl: document.getElementById('set-logo').value,
         welcomeMsg: document.getElementById('set-msg').value
     });
-    alert("Settings Saved!");
+    alert("Saved!");
 };
 
-// --- REVIEW LOGIC ---
+// --- FILE & REVIEW LOGIC ---
 window.setStar = (n) => {
     currentRating = n;
     const stars = document.getElementById('stars').children;
     for(let i=0; i<5; i++) stars[i].style.color = i < n ? '#f59e0b' : '#ddd';
 };
 
+// 1. FILE VALIDATION
 window.handleFileSelect = () => {
     const fileInput = document.getElementById('rev-file');
+    const errorBox = document.getElementById('file-error');
+    
     if(fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        
+        // CHECK SIZE (1MB = 1048576 bytes)
+        if(file.size > 1048576) {
+            errorBox.style.display = 'block'; // Show Error
+            fileInput.value = ""; // Clear Input
+            return;
+        } else {
+            errorBox.style.display = 'none'; // Hide Error
+        }
+
         if(uploadQueue.length >= 3) return alert("Max 3 photos");
-        uploadQueue.push(fileInput.files[0]);
+        uploadQueue.push(file);
         renderPhotoPreviews();
     }
 };
@@ -176,37 +158,61 @@ function renderPhotoPreviews() {
         container.appendChild(div);
     });
 }
-
 window.removePhoto = (index) => {
     uploadQueue.splice(index, 1);
     renderPhotoPreviews();
 };
 
+// 2. SUBMIT + STUCK BUTTON FIX
 window.submitReview = async () => {
     const name = document.getElementById('rev-name').value;
+    const contact = document.getElementById('rev-contact').value;
+    const country = document.getElementById('rev-country').value;
     const msg = document.getElementById('rev-text').value; 
     const btn = document.getElementById('sub-btn');
 
-    if(!name || !msg) return alert("Please fill name and review.");
-    btn.innerText = "Uploading..."; btn.disabled = true;
+    // Validation
+    if(!name || !contact || !country || !msg) return alert("All fields are required!");
 
-    // Upload Photos
-    let imageUrls = [];
-    for(const file of uploadQueue) {
-        const sRef = ref(storage, `reviews/${Date.now()}_${file.name}`);
-        await uploadBytes(sRef, file);
-        const url = await getDownloadURL(sRef);
-        imageUrls.push(url);
+    // Set Button Loading State
+    btn.innerText = "Uploading..."; 
+    btn.disabled = true;
+
+    try {
+        // Upload Photos
+        let imageUrls = [];
+        for(const file of uploadQueue) {
+            const sRef = ref(storage, `reviews/${Date.now()}_${file.name}`);
+            await uploadBytes(sRef, file);
+            const url = await getDownloadURL(sRef);
+            imageUrls.push(url);
+        }
+
+        // Save to DB
+        await addDoc(collection(db, "reviews"), {
+            ownerId: formUid, 
+            name, 
+            contact, // Saved securely
+            country,
+            msg, 
+            rating: currentRating,
+            photos: imageUrls, 
+            date: Date.now()
+        });
+
+        // Success UI
+        document.getElementById('view-form').innerHTML = `<div class='card-box'><h2>Thank You!</h2><p>Review Submitted Successfully.</p></div>`;
+
+    } catch (e) {
+        console.error(e);
+        alert("Error: " + e.message);
+        // RESET BUTTON IF ERROR
+        btn.innerText = "Submit Review"; 
+        btn.disabled = false;
     }
-
-    await addDoc(collection(db, "reviews"), {
-        ownerId: formUid, name, msg, rating: currentRating,
-        photos: imageUrls, date: Date.now()
-    });
-
-    document.getElementById('view-form').innerHTML = `<div class='card-box'><h2>Thank You!</h2><p>Review Submitted.</p></div>`;
 };
 
+// 3. LOAD REVIEWS (PRIVACY LOGIC)
 async function loadReviews(uid, divId) {
     try {
         const q = query(collection(db, "reviews"), where("ownerId", "==", uid), orderBy("date", "desc"));
@@ -238,21 +244,25 @@ async function loadReviews(uid, divId) {
                 imgHtml += `</div>`;
             }
 
+            // PRIVACY LOGIC
+            let contactInfo = "";
+            if(divId === 'reviews-list') { // Only show in Admin Dashboard
+                contactInfo = `<div class="admin-badge"><i class="fa-solid fa-envelope"></i> ${r.contact} (${r.country})</div>`;
+            }
+
             div.innerHTML += `
                 <div class="review-card">
                     <div class="stars">${stars}</div>
                     <p style="color:#334155; line-height:1.5;">"${r.msg}"</p>
                     ${imgHtml}
                     <div style="margin-top:15px; font-weight:bold; font-size:0.9rem;">- ${r.name}</div>
+                    ${contactInfo} <!-- Only visible to you -->
                 </div>
             `;
         });
     } catch(e) {
-        console.error("Firebase Error:", e);
-        if(e.code === 'failed-precondition') {
-            // This is the error we expect if index is missing
-            console.log("Index missing");
-        }
+        console.error(e);
+        if(e.code === 'failed-precondition') console.log("Index missing");
     }
 }
 
