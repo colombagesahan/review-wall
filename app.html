@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | ReviewWall</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- 1. AUTH SCREEN -->
+    <div id="view-auth" class="center-screen hidden">
+        <div class="card">
+            <h2>Welcome Back</h2>
+            <p style="color:#64748b; margin-bottom:20px;">Manage your testimonials</p>
+            <input type="email" id="email" placeholder="Email Address">
+            <input type="password" id="pass" placeholder="Password">
+            <button onclick="window.handleAuth()" class="btn">Login / Register</button>
+        </div>
+    </div>
+
+    <!-- 2. LICENSE LOCK (AppSumo) -->
+    <div id="view-lock" class="center-screen hidden" style="background:rgba(0,0,0,0.95); position:fixed; inset:0; z-index:99;">
+        <div class="card">
+            <i class="fa-solid fa-lock" style="font-size:3rem; color:#f59e0b; margin-bottom:15px;"></i>
+            <h2 style="color:#f59e0b;">Activate Lifetime Deal</h2>
+            <p style="margin-bottom:20px;">Enter your AppSumo Code to unlock your dashboard.</p>
+            <input id="license-code" placeholder="SUMO-XXXX-XXXX" style="text-align:center; text-transform:uppercase; font-weight:bold; letter-spacing:1px;">
+            <button onclick="window.redeemCode()" class="btn btn-primary">Activate Now</button>
+            <p style="margin-top:15px; font-size:0.8rem; cursor:pointer;" onclick="window.logout()">Logout</p>
+        </div>
+    </div>
+
+    <!-- 3. DASHBOARD (Admin) -->
+    <div id="view-dash" class="dashboard hidden">
+        <aside class="sidebar">
+            <h3 style="margin-bottom:30px;">ReviewWall.</h3>
+            
+            <div style="margin-bottom:20px;">
+                <label style="font-size:0.8rem; font-weight:bold; color:#64748b;">COLLECT REVIEWS</label>
+                <button onclick="window.copyLink('form')" class="btn-outline" style="width:100%; margin-top:5px; text-align:left;">
+                    <i class="fa-solid fa-copy"></i> Copy Form Link
+                </button>
+            </div>
+
+            <div style="margin-bottom:20px;">
+                <label style="font-size:0.8rem; font-weight:bold; color:#64748b;">DISPLAY REVIEWS</label>
+                <button onclick="window.copyLink('wall')" class="btn-outline" style="width:100%; margin-top:5px; text-align:left;">
+                    <i class="fa-solid fa-eye"></i> View Public Wall
+                </button>
+            </div>
+
+            <button onclick="window.logout()" class="btn-outline" style="margin-top:auto; color:red; border-color:red;">Logout</button>
+        </aside>
+        <main class="main">
+            <h1>My Reviews</h1>
+            <p style="color:#64748b; margin-bottom:30px;">Reviews collected from your form.</p>
+            <div id="admin-list" class="masonry">Loading...</div>
+        </main>
+    </div>
+
+    <!-- 4. PUBLIC FORM (Customer View) -->
+    <div id="view-form" class="center-screen hidden">
+        <div class="card" style="max-width:500px;">
+            <h2>Leave a Review</h2>
+            <p style="color:#64748b; margin-bottom:20px;">How was your experience with <b id="form-owner">Us</b>?</p>
+            
+            <div id="stars" style="font-size:2rem; color:#e2e8f0; cursor:pointer; margin-bottom:20px;">
+                <i onclick="window.setStar(1)" class="fa-solid fa-star"></i>
+                <i onclick="window.setStar(2)" class="fa-solid fa-star"></i>
+                <i onclick="window.setStar(3)" class="fa-solid fa-star"></i>
+                <i onclick="window.setStar(4)" class="fa-solid fa-star"></i>
+                <i onclick="window.setStar(5)" class="fa-solid fa-star"></i>
+            </div>
+            
+            <input id="rev-name" placeholder="Your Name">
+            <textarea id="rev-msg" placeholder="Write your review here..." rows="4"></textarea>
+            <label style="display:block; text-align:left; font-size:0.8rem; margin-bottom:5px;">Photo (Optional - Max 1MB)</label>
+            <input type="file" id="rev-img" accept="image/*">
+            
+            <button onclick="window.submitReview()" class="btn btn-primary" id="sub-btn">Submit Review</button>
+        </div>
+    </div>
+
+    <!-- 5. PUBLIC WALL (Embed View) -->
+    <div id="view-wall" class="hidden" style="padding:40px;">
+        <div style="text-align:center; margin-bottom:50px;">
+            <h1>Wall of Love ❤️</h1>
+            <p>What our customers say</p>
+        </div>
+        <div id="wall-list" class="masonry"></div>
+        <div style="text-align:center; margin-top:50px; opacity:0.5; font-size:0.8rem;">Powered by ReviewWall</div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
