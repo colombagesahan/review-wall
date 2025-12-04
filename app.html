@@ -9,78 +9,44 @@
 </head>
 <body>
 
-    <!-- MOBILE NAV -->
     <div class="mobile-nav">
         <div style="font-weight:800;">ReviewWall</div>
         <i class="fa-solid fa-bars hamburger" onclick="window.toggleSidebar()"></i>
     </div>
 
-    <!-- 1. AUTH SCREEN -->
+    <!-- 1. AUTH -->
     <div id="view-auth" class="center-screen hidden">
         <div class="card-box">
             <h2>Welcome Back</h2>
-            <p class="subtitle">Login to manage reviews</p>
+            <p style="color:#666; margin-bottom:20px;">Login to manage reviews</p>
             <input type="email" id="email" placeholder="Email Address">
             <input type="password" id="pass" placeholder="Password">
             <button onclick="window.handleAuth()" class="btn">Login / Register</button>
         </div>
     </div>
 
-    <!-- 2. LICENSE LOCK -->
+    <!-- 2. LOCK -->
     <div id="view-lock" class="center-screen hidden" style="background:rgba(15,23,42,0.98); position:fixed; inset:0; z-index:99;">
         <div class="card-box">
             <h2 style="color:#f59e0b;">Activate Lifetime Deal</h2>
-            <p class="subtitle">Enter AppSumo Code.</p>
             <input id="license-code" placeholder="SUMO-XXXX-XXXX" style="text-align:center; text-transform:uppercase; font-weight:bold;">
-            <button onclick="window.redeemCode()" class="btn" style="background:#f59e0b;">Activate Now</button>
+            <button onclick="window.redeemCode()" class="btn" style="background:#f59e0b;">Activate</button>
             <p style="margin-top:15px; cursor:pointer;" onclick="window.logout()">Logout</p>
         </div>
     </div>
 
-    <!-- 2.5 SUPER ADMIN DASHBOARD (Only visible to you) -->
-<div id="view-admin" class="dashboard hidden">
-    <aside class="sidebar">
-        <div class="brand">👑 Super Admin</div>
-        <div class="menu-btn active">Overview</div>
-        <button onclick="window.logout()" class="menu-btn logout">Logout</button>
-    </aside>
-    <main class="main">
-        <h1>Platform Stats</h1>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">TOTAL USERS</div>
-                <div class="stat-val" id="admin-users">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">TOTAL REVIEWS</div>
-                <div class="stat-val" id="admin-reviews">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">LICENSES USED</div>
-                <div class="stat-val" id="admin-licenses">0</div>
-            </div>
-        </div>
-        <div style="margin-top:40px;">
-            <h3>Quick Links</h3>
-            <a href="generate.html" target="_blank" class="btn btn-primary" style="display:inline-block; width:auto; text-decoration:none; margin-top:10px;">
-                Open Code Generator
-            </a>
-            <a href="https://console.firebase.google.com/" target="_blank" class="btn btn-outline" style="display:inline-block; width:auto; text-decoration:none; margin-top:10px; margin-left:10px;">
-                Open Firebase Database
-            </a>
-        </div>
-    </main>
-</div>
-    
     <!-- 3. DASHBOARD -->
     <div id="view-dash" class="dashboard hidden">
         <aside class="sidebar" id="sidebar">
             <div class="brand"><i class="fa-solid fa-star"></i> ReviewWall</div>
-            <button onclick="window.switchTab('guide')" class="menu-btn"><i class="fa-solid fa-book"></i> Start Guide</button>
-            <button onclick="window.switchTab('reviews')" class="menu-btn"><i class="fa-solid fa-list"></i> Reviews</button>
-            <button onclick="window.switchTab('share')" class="menu-btn"><i class="fa-solid fa-share-nodes"></i> Share</button>
+            <button onclick="window.switchTab('guide')" class="menu-btn"><i class="fa-solid fa-book"></i> Quick Start</button>
+            <button onclick="window.switchTab('reviews')" class="menu-btn"><i class="fa-solid fa-layer-group"></i> Wall Preview</button>
+            <button onclick="window.switchTab('reviewers')" class="menu-btn"><i class="fa-solid fa-users"></i> My Reviewers</button>
+            <button onclick="window.switchTab('design')" class="menu-btn"><i class="fa-solid fa-palette"></i> Design Wall</button>
+            <button onclick="window.switchTab('share')" class="menu-btn"><i class="fa-solid fa-share-nodes"></i> Share & Embed</button>
             <button onclick="window.switchTab('settings')" class="menu-btn"><i class="fa-solid fa-gear"></i> Settings</button>
-            <button onclick="window.copyLink('wall')" class="menu-btn" style="margin-top:20px; border:1px solid #475569;"><i class="fa-solid fa-eye"></i> View Wall</button>
+            
+            <button onclick="window.copyLink('wall')" class="menu-btn" style="margin-top:20px; border:1px solid #475569;"><i class="fa-solid fa-eye"></i> Open Public Wall</button>
             <button onclick="window.logout()" class="menu-btn logout"><i class="fa-solid fa-power-off"></i> Logout</button>
         </aside>
 
@@ -89,21 +55,59 @@
             <div id="tab-guide">
                 <h1>👋 Quick Start Guide</h1>
                 <div class="stat-card">
-                    <p>1. Go to <b>Settings</b> to set your Business Name.</p>
-                    <p>2. Go to <b>Share</b> to get your link.</p>
-                    <p>3. Send link to customers.</p>
+                    <p>1. <b>Settings:</b> Add your Business Name.</p>
+                    <p>2. <b>Design Wall:</b> Customize colors and fonts.</p>
+                    <p>3. <b>Share:</b> Send the link to customers.</p>
+                    <p>4. <b>My Reviewers:</b> See customer contact info securely.</p>
                 </div>
             </div>
 
+            <!-- REVIEWS WALL PREVIEW -->
             <div id="tab-reviews" class="hidden">
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-label">TOTAL</div><div class="stat-val" id="stat-count">0</div></div>
                     <div class="stat-card"><div class="stat-label">RATING</div><div class="stat-val" id="stat-avg">0.0</div></div>
                 </div>
-                <h2>Your Reviews</h2>
+                <h2>Wall Preview</h2>
                 <div id="reviews-list" class="masonry">Loading...</div>
             </div>
 
+            <!-- MY REVIEWERS (DATA TABLE) -->
+            <div id="tab-reviewers" class="hidden">
+                <h1>My Reviewers</h1>
+                <p style="color:#64748b; margin-bottom:20px;">Full details of your customers. Sorted by date.</p>
+                <div id="reviewers-list">Loading...</div>
+            </div>
+
+            <!-- DESIGN CUSTOMIZATION -->
+            <div id="tab-design" class="hidden">
+                <h1>Design Your Wall</h1>
+                <div class="stat-card" style="max-width:600px;">
+                    <label>Wall Background Color</label> <input type="color" id="ds-wall-bg" value="#f3f4f6" style="height:50px;">
+                    <label>Card Background Color</label> <input type="color" id="ds-card-bg" value="#ffffff" style="height:50px;">
+                    <label>Text Color</label> <input type="color" id="ds-text" value="#334155" style="height:50px;">
+                    <label>Star Color</label> <input type="color" id="ds-star" value="#f59e0b" style="height:50px;">
+                    
+                    <label>Font Family</label>
+                    <select id="ds-font">
+                        <option value="'Plus Jakarta Sans', sans-serif">Modern (Default)</option>
+                        <option value="'Inter', sans-serif">Clean (Inter)</option>
+                        <option value="'Lora', serif">Elegant (Serif)</option>
+                        <option value="'Courier New', monospace">Tech (Mono)</option>
+                    </select>
+
+                    <label>Font Size</label>
+                    <select id="ds-size">
+                        <option value="14px">Small</option>
+                        <option value="16px" selected>Medium</option>
+                        <option value="18px">Large</option>
+                    </select>
+
+                    <button onclick="window.saveDesign()" class="btn">Save Design</button>
+                </div>
+            </div>
+
+            <!-- SHARE -->
             <div id="tab-share" class="hidden">
                 <h1>Share & Embed</h1>
                 <div class="stat-card">
@@ -115,14 +119,15 @@
                 </div>
                 <br>
                 <div class="stat-card">
-                    <h3>Website Embed</h3>
-                    <textarea id="embed-code" rows="4" readonly style="background:#f1f5f9; font-family:monospace;"></textarea>
+                    <h3>Website Embed (Responsive)</h3>
+                    <textarea id="embed-code" rows="4" readonly style="background:#f1f5f9; font-family:monospace; font-size:0.8rem;"></textarea>
                     <button onclick="window.copyInput('embed-code')" class="btn btn-sm" style="width:auto;">Copy Code</button>
                 </div>
             </div>
 
+            <!-- SETTINGS -->
             <div id="tab-settings" class="hidden">
-                <h1>Settings</h1>
+                <h1>Business Settings</h1>
                 <div class="stat-card" style="max-width:600px;">
                     <label>Business Name</label><input id="set-bizname">
                     <label>Logo URL</label><input id="set-logo">
@@ -134,13 +139,12 @@
     </div>
 
     <!-- 4. PUBLIC FORM -->
-    <div id="view-form" class="center-screen hidden">
-        <div class="card-box">
+    <div id="view-form" class="center-screen hidden" style="align-items:flex-start; padding-top:40px; overflow-y:auto;">
+        <div class="card-box" style="margin-bottom:40px;">
             <img id="form-logo" src="" style="height:50px; margin-bottom:15px; display:none;">
             <h2 id="form-biz-name">Leave a Review</h2>
             <p id="form-msg" style="color:#666; margin-bottom:20px;"></p>
             
-            <!-- Stars -->
             <div id="stars" style="font-size:2.5rem; color:#ddd; cursor:pointer; margin-bottom:20px;">
                 <i onclick="window.setStar(1)" class="fa-solid fa-star"></i>
                 <i onclick="window.setStar(2)" class="fa-solid fa-star"></i>
@@ -149,37 +153,267 @@
                 <i onclick="window.setStar(5)" class="fa-solid fa-star"></i>
             </div>
             
-            <!-- Inputs -->
             <input id="rev-name" placeholder="Your Name *">
             
-            <!-- NEW FIELDS -->
-            <input id="rev-contact" placeholder="Email or Phone (Required) *">
+           <!-- COUNTRY & CONTACT -->
             <select id="rev-country">
                 <option value="">Select Country *</option>
-                <option value="Sri Lanka">Sri Lanka</option>
-                <option value="USA">USA</option>
-                <option value="UK">UK</option>
-                <option value="Canada">Canada</option>
-                <option value="Australia">Australia</option>
-                <option value="UAE">UAE</option>
-                <option value="India">India</option>
-                <option value="Other">Other</option>
+                <option value="AF">Afghanistan (+93)</option>
+                <option value="AL">Albania (+355)</option>
+                <option value="DZ">Algeria (+213)</option>
+                <option value="AS">American Samoa (+1)</option>
+                <option value="AD">Andorra (+376)</option>
+                <option value="AO">Angola (+244)</option>
+                <option value="AI">Anguilla (+1)</option>
+                <option value="AG">Antigua & Barbuda (+1)</option>
+                <option value="AR">Argentina (+54)</option>
+                <option value="AM">Armenia (+374)</option>
+                <option value="AW">Aruba (+297)</option>
+                <option value="AU">Australia (+61)</option>
+                <option value="AT">Austria (+43)</option>
+                <option value="AZ">Azerbaijan (+994)</option>
+                <option value="BS">Bahamas (+1)</option>
+                <option value="BH">Bahrain (+973)</option>
+                <option value="BD">Bangladesh (+880)</option>
+                <option value="BB">Barbados (+1)</option>
+                <option value="BY">Belarus (+375)</option>
+                <option value="BE">Belgium (+32)</option>
+                <option value="BZ">Belize (+501)</option>
+                <option value="BJ">Benin (+229)</option>
+                <option value="BM">Bermuda (+1)</option>
+                <option value="BT">Bhutan (+975)</option>
+                <option value="BO">Bolivia (+591)</option>
+                <option value="BA">Bosnia & Herzegovina (+387)</option>
+                <option value="BW">Botswana (+267)</option>
+                <option value="BR">Brazil (+55)</option>
+                <option value="IO">British Indian Ocean Ter (+246)</option>
+                <option value="VG">British Virgin Islands (+1)</option>
+                <option value="BN">Brunei (+673)</option>
+                <option value="BG">Bulgaria (+359)</option>
+                <option value="BF">Burkina Faso (+226)</option>
+                <option value="BI">Burundi (+257)</option>
+                <option value="KH">Cambodia (+855)</option>
+                <option value="CM">Cameroon (+237)</option>
+                <option value="CA">Canada (+1)</option>
+                <option value="CV">Cape Verde (+238)</option>
+                <option value="KY">Cayman Islands (+1)</option>
+                <option value="CF">Central African Republic (+236)</option>
+                <option value="TD">Chad (+235)</option>
+                <option value="CL">Chile (+56)</option>
+                <option value="CN">China (+86)</option>
+                <option value="CX">Christmas Island (+61)</option>
+                <option value="CC">Cocos (Keeling) Islands (+61)</option>
+                <option value="CO">Colombia (+57)</option>
+                <option value="KM">Comoros (+269)</option>
+                <option value="CG">Congo (+242)</option>
+                <option value="CK">Cook Islands (+682)</option>
+                <option value="CR">Costa Rica (+506)</option>
+                <option value="HR">Croatia (+385)</option>
+                <option value="CU">Cuba (+53)</option>
+                <option value="CW">Curacao (+599)</option>
+                <option value="CY">Cyprus (+357)</option>
+                <option value="CZ">Czech Republic (+420)</option>
+                <option value="CD">Democratic Republic of the Congo (+243)</option>
+                <option value="DK">Denmark (+45)</option>
+                <option value="DJ">Djibouti (+253)</option>
+                <option value="DM">Dominica (+1)</option>
+                <option value="DO">Dominican Republic (+1)</option>
+                <option value="TL">East Timor (+670)</option>
+                <option value="EC">Ecuador (+593)</option>
+                <option value="EG">Egypt (+20)</option>
+                <option value="SV">El Salvador (+503)</option>
+                <option value="GQ">Equatorial Guinea (+240)</option>
+                <option value="ER">Eritrea (+291)</option>
+                <option value="EE">Estonia (+372)</option>
+                <option value="ET">Ethiopia (+251)</option>
+                <option value="FK">Falkland Islands (+500)</option>
+                <option value="FO">Faroe Islands (+298)</option>
+                <option value="FJ">Fiji (+679)</option>
+                <option value="FI">Finland (+358)</option>
+                <option value="FR">France (+33)</option>
+                <option value="GF">French Guiana (+594)</option>
+                <option value="PF">French Polynesia (+689)</option>
+                <option value="GA">Gabon (+241)</option>
+                <option value="GM">Gambia (+220)</option>
+                <option value="GE">Georgia (+995)</option>
+                <option value="DE">Germany (+49)</option>
+                <option value="GH">Ghana (+233)</option>
+                <option value="GI">Gibraltar (+350)</option>
+                <option value="GR">Greece (+30)</option>
+                <option value="GL">Greenland (+299)</option>
+                <option value="GD">Grenada (+1)</option>
+                <option value="GP">Guadeloupe (+590)</option>
+                <option value="GU">Guam (+1)</option>
+                <option value="GT">Guatemala (+502)</option>
+                <option value="GG">Guernsey (+44)</option>
+                <option value="GN">Guinea (+224)</option>
+                <option value="GW">Guinea-Bissau (+245)</option>
+                <option value="GY">Guyana (+592)</option>
+                <option value="HT">Haiti (+509)</option>
+                <option value="HN">Honduras (+504)</option>
+                <option value="HK">Hong Kong (+852)</option>
+                <option value="HU">Hungary (+36)</option>
+                <option value="IS">Iceland (+354)</option>
+                <option value="IN">India (+91)</option>
+                <option value="ID">Indonesia (+62)</option>
+                <option value="IR">Iran (+98)</option>
+                <option value="IQ">Iraq (+964)</option>
+                <option value="IE">Ireland (+353)</option>
+                <option value="IM">Isle of Man (+44)</option>
+                <option value="IL">Israel (+972)</option>
+                <option value="IT">Italy (+39)</option>
+                <option value="CI">Ivory Coast (+225)</option>
+                <option value="JM">Jamaica (+1)</option>
+                <option value="JP">Japan (+81)</option>
+                <option value="JE">Jersey (+44)</option>
+                <option value="JO">Jordan (+962)</option>
+                <option value="KZ">Kazakhstan (+7)</option>
+                <option value="KE">Kenya (+254)</option>
+                <option value="KI">Kiribati (+686)</option>
+                <option value="KS">Kosovo (+383)</option>
+                <option value="KW">Kuwait (+965)</option>
+                <option value="KG">Kyrgyzstan (+996)</option>
+                <option value="LA">Laos (+856)</option>
+                <option value="LV">Latvia (+371)</option>
+                <option value="LB">Lebanon (+961)</option>
+                <option value="LS">Lesotho (+266)</option>
+                <option value="LR">Liberia (+231)</option>
+                <option value="LY">Libya (+218)</option>
+                <option value="LI">Liechtenstein (+423)</option>
+                <option value="LT">Lithuania (+370)</option>
+                <option value="LU">Luxembourg (+352)</option>
+                <option value="MO">Macau (+853)</option>
+                <option value="MK">Macedonia (+389)</option>
+                <option value="MG">Madagascar (+261)</option>
+                <option value="MW">Malawi (+265)</option>
+                <option value="MY">Malaysia (+60)</option>
+                <option value="MV">Maldives (+960)</option>
+                <option value="ML">Mali (+223)</option>
+                <option value="MT">Malta (+356)</option>
+                <option value="MH">Marshall Islands (+692)</option>
+                <option value="MQ">Martinique (+596)</option>
+                <option value="MR">Mauritania (+222)</option>
+                <option value="MU">Mauritius (+230)</option>
+                <option value="YT">Mayotte (+262)</option>
+                <option value="MX">Mexico (+52)</option>
+                <option value="FM">Micronesia (+691)</option>
+                <option value="MD">Moldova (+373)</option>
+                <option value="MC">Monaco (+377)</option>
+                <option value="MN">Mongolia (+976)</option>
+                <option value="ME">Montenegro (+382)</option>
+                <option value="MS">Montserrat (+1)</option>
+                <option value="MA">Morocco (+212)</option>
+                <option value="MZ">Mozambique (+258)</option>
+                <option value="MM">Myanmar (+95)</option>
+                <option value="NA">Namibia (+264)</option>
+                <option value="NR">Nauru (+674)</option>
+                <option value="NP">Nepal (+977)</option>
+                <option value="NL">Netherlands (+31)</option>
+                <option value="NC">New Caledonia (+687)</option>
+                <option value="NZ">New Zealand (+64)</option>
+                <option value="NI">Nicaragua (+505)</option>
+                <option value="NE">Niger (+227)</option>
+                <option value="NG">Nigeria (+234)</option>
+                <option value="NU">Niue (+683)</option>
+                <option value="NF">Norfolk Island (+672)</option>
+                <option value="KP">North Korea (+850)</option>
+                <option value="MP">Northern Mariana Islands (+1)</option>
+                <option value="NO">Norway (+47)</option>
+                <option value="OM">Oman (+968)</option>
+                <option value="PK">Pakistan (+92)</option>
+                <option value="PW">Palau (+680)</option>
+                <option value="PS">Palestine (+970)</option>
+                <option value="PA">Panama (+507)</option>
+                <option value="PG">Papua New Guinea (+675)</option>
+                <option value="PY">Paraguay (+595)</option>
+                <option value="PE">Peru (+51)</option>
+                <option value="PH">Philippines (+63)</option>
+                <option value="PL">Poland (+48)</option>
+                <option value="PT">Portugal (+351)</option>
+                <option value="PR">Puerto Rico (+1)</option>
+                <option value="QA">Qatar (+974)</option>
+                <option value="RE">Reunion (+262)</option>
+                <option value="RO">Romania (+40)</option>
+                <option value="RU">Russia (+7)</option>
+                <option value="RW">Rwanda (+250)</option>
+                <option value="BL">Saint Barthelemy (+590)</option>
+                <option value="SH">Saint Helena (+290)</option>
+                <option value="KN">Saint Kitts & Nevis (+1)</option>
+                <option value="LC">Saint Lucia (+1)</option>
+                <option value="MF">Saint Martin (+590)</option>
+                <option value="PM">Saint Pierre & Miquelon (+508)</option>
+                <option value="VC">Saint Vincent & Grenadines (+1)</option>
+                <option value="WS">Samoa (+685)</option>
+                <option value="SM">San Marino (+378)</option>
+                <option value="ST">Sao Tome & Principe (+239)</option>
+                <option value="SA">Saudi Arabia (+966)</option>
+                <option value="SN">Senegal (+221)</option>
+                <option value="RS">Serbia (+381)</option>
+                <option value="SC">Seychelles (+248)</option>
+                <option value="SL">Sierra Leone (+232)</option>
+                <option value="SG">Singapore (+65)</option>
+                <option value="SX">Sint Maarten (+1)</option>
+                <option value="SK">Slovakia (+421)</option>
+                <option value="SI">Slovenia (+386)</option>
+                <option value="SB">Solomon Islands (+677)</option>
+                <option value="SO">Somalia (+252)</option>
+                <option value="ZA">South Africa (+27)</option>
+                <option value="KR">South Korea (+82)</option>
+                <option value="SS">South Sudan (+211)</option>
+                <option value="ES">Spain (+34)</option>
+                <option value="LK">Sri Lanka (+94)</option>
+                <option value="SD">Sudan (+249)</option>
+                <option value="SR">Suriname (+597)</option>
+                <option value="SJ">Svalbard & Jan Mayen (+47)</option>
+                <option value="SZ">Swaziland (+268)</option>
+                <option value="SE">Sweden (+46)</option>
+                <option value="CH">Switzerland (+41)</option>
+                <option value="SY">Syria (+963)</option>
+                <option value="TW">Taiwan (+886)</option>
+                <option value="TJ">Tajikistan (+992)</option>
+                <option value="TZ">Tanzania (+255)</option>
+                <option value="TH">Thailand (+66)</option>
+                <option value="TG">Togo (+228)</option>
+                <option value="TK">Tokelau (+690)</option>
+                <option value="TO">Tonga (+676)</option>
+                <option value="TT">Trinidad & Tobago (+1)</option>
+                <option value="TN">Tunisia (+216)</option>
+                <option value="TR">Turkey (+90)</option>
+                <option value="TM">Turkmenistan (+993)</option>
+                <option value="TC">Turks & Caicos Islands (+1)</option>
+                <option value="TV">Tuvalu (+688)</option>
+                <option value="UG">Uganda (+256)</option>
+                <option value="UA">Ukraine (+380)</option>
+                <option value="AE">United Arab Emirates (+971)</option>
+                <option value="GB">United Kingdom (+44)</option>
+                <option value="US">United States (+1)</option>
+                <option value="UY">Uruguay (+598)</option>
+                <option value="VI">US Virgin Islands (+1)</option>
+                <option value="UZ">Uzbekistan (+998)</option>
+                <option value="VU">Vanuatu (+678)</option>
+                <option value="VA">Vatican City (+39)</option>
+                <option value="VE">Venezuela (+58)</option>
+                <option value="VN">Vietnam (+84)</option>
+                <option value="WF">Wallis & Futuna (+681)</option>
+                <option value="YE">Yemen (+967)</option>
+                <option value="ZM">Zambia (+260)</option>
+                <option value="ZW">Zimbabwe (+263)</option>
             </select>
 
+            <input id="rev-contact" placeholder="Email or Phone *">
             <textarea id="rev-text" placeholder="Write review..." rows="3"></textarea>
             
-            <!-- Photos -->
+            <div class="privacy-note">
+                <i class="fa-solid fa-lock"></i> <b>Privacy Guarantee:</b> Your contact details (Phone/Email) are 100% private. They are never shown publicly. We collect this only to verify your review and contact you if we need to resolve an issue.
+            </div>
+
             <div style="text-align:left; margin-bottom:15px;">
                 <label style="font-size:0.8rem; font-weight:bold;">Photos (Max 3)</label>
                 <div id="photo-previews" class="photo-preview-container"></div>
-                
-                <!-- ERROR MESSAGE BOX -->
                 <div id="file-error" class="upload-error">
-                    File too large! Please upload images under 1MB. 
-                    <br><a href="https://tinypng.com/" target="_blank">Use this tool to reduce size</a>.
+                    File too large! Max 1MB. <a href="https://tinypng.com/" target="_blank">Reduce Size Here</a>.
                 </div>
-
-                <button onclick="document.getElementById('rev-file').click()" class="btn btn-sm btn-outline" style="width:auto;">+ Add Photo</button>
+                <button onclick="document.getElementById('rev-file').click()" class="btn btn-sm btn-outline" style="width:auto; margin-top:5px;">+ Add Photo</button>
                 <input type="file" id="rev-file" accept="image/*" style="display:none;" onchange="window.handleFileSelect()">
             </div>
 
@@ -188,12 +422,12 @@
     </div>
 
     <!-- 5. PUBLIC WALL -->
-    <div id="view-wall" class="hidden" style="padding:40px;">
+    <div id="view-wall" class="hidden wall-container">
         <div style="text-align:center; margin-bottom:40px;">
             <img id="wall-logo" src="" style="height:60px; margin-bottom:10px; display:none;">
-            <h1 id="wall-title">Wall of Love ❤️</h1>
+            <h1 id="wall-title" style="color:var(--text-color);">Wall of Love ❤️</h1>
         </div>
-        <div id="wall-list" class="masonry" style="max-width:1200px; margin:0 auto;"></div>
+        <div id="wall-list" class="masonry"></div>
     </div>
 
     <script type="module" src="app.js"></script>
