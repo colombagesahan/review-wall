@@ -1,7 +1,10 @@
 import { auth, db, storage } from './firebase-config.js';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, addDoc, orderBy, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+// --- CONFIG YOUR ADMIN EMAIL HERE ---
+const ADMIN_EMAIL = "colombagesahan@gmail.com"; 
 
 const params = new URLSearchParams(window.location.search);
 const formUid = params.get('f');
@@ -11,7 +14,7 @@ let uploadQueue = [];
 
 // --- INIT ---
 onAuthStateChanged(auth, async (user) => {
-    // 1. PUBLIC FORM
+    // 1. PUBLIC VIEWS (No Login)
     if (formUid) { 
         showView('view-form');
         const snap = await getDoc(doc(db, "users", formUid));
@@ -27,7 +30,6 @@ onAuthStateChanged(auth, async (user) => {
         return; 
     }
     
-    // 2. PUBLIC WALL
     if (wallUid) { 
         showView('view-wall'); 
         const snap = await getDoc(doc(db, "users", wallUid));
@@ -39,8 +41,16 @@ onAuthStateChanged(auth, async (user) => {
         return; 
     }
 
-    // 3. ADMIN DASHBOARD
+    // 2. LOGGED IN LOGIC
     if (user) {
+        // --- CHECK IF SUPER ADMIN ---
+        if (user.email === ADMIN_EMAIL) {
+            showView('view-admin');
+            loadAdminStats();
+            return;
+        }
+
+        // --- NORMAL USER ---
         const snap = await getDoc(doc(db, "users", user.uid));
         if (snap.exists() && snap.data().plan === 'lifetime') {
             showView('view-dash');
@@ -63,7 +73,25 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- NAVIGATION ---
+// --- ADMIN STATS LOGIC ---
+async function loadAdminStats() {
+    // Count Users
+    const collUser = collection(db, "users");
+    const snapshotUser = await getCountFromServer(collUser);
+    document.getElementById('admin-users').innerText = snapshotUser.data().count;
+
+    // Count Reviews
+    const collRev = collection(db, "reviews");
+    const snapshotRev = await getCountFromServer(collRev);
+    document.getElementById('admin-reviews').innerText = snapshotRev.data().count;
+
+    // Count Licenses Used
+    const q = query(collection(db, "licenses"), where("status", "==", "used"));
+    const snapshotLic = await getCountFromServer(q);
+    document.getElementById('admin-licenses').innerText = snapshotLic.data().count;
+}
+
+// --- NAVIGATION & UI ---
 window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
 window.switchTab = (tab) => {
     document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
@@ -125,22 +153,14 @@ window.setStar = (n) => {
     for(let i=0; i<5; i++) stars[i].style.color = i < n ? '#f59e0b' : '#ddd';
 };
 
-// 1. FILE VALIDATION
 window.handleFileSelect = () => {
     const fileInput = document.getElementById('rev-file');
     const errorBox = document.getElementById('file-error');
-    
     if(fileInput.files.length > 0) {
         const file = fileInput.files[0];
-        
-        // CHECK SIZE (1MB = 1048576 bytes)
         if(file.size > 1048576) {
-            errorBox.style.display = 'block'; // Show Error
-            fileInput.value = ""; // Clear Input
-            return;
-        } else {
-            errorBox.style.display = 'none'; // Hide Error
-        }
+            errorBox.style.display = 'block'; fileInput.value = ""; return;
+        } else { errorBox.style.display = 'none'; }
 
         if(uploadQueue.length >= 3) return alert("Max 3 photos");
         uploadQueue.push(file);
@@ -163,7 +183,6 @@ window.removePhoto = (index) => {
     renderPhotoPreviews();
 };
 
-// 2. SUBMIT + STUCK BUTTON FIX
 window.submitReview = async () => {
     const name = document.getElementById('rev-name').value;
     const contact = document.getElementById('rev-contact').value;
@@ -171,15 +190,10 @@ window.submitReview = async () => {
     const msg = document.getElementById('rev-text').value; 
     const btn = document.getElementById('sub-btn');
 
-    // Validation
     if(!name || !contact || !country || !msg) return alert("All fields are required!");
-
-    // Set Button Loading State
-    btn.innerText = "Uploading..."; 
-    btn.disabled = true;
+    btn.innerText = "Uploading..."; btn.disabled = true;
 
     try {
-        // Upload Photos
         let imageUrls = [];
         for(const file of uploadQueue) {
             const sRef = ref(storage, `reviews/${Date.now()}_${file.name}`);
@@ -188,43 +202,23 @@ window.submitReview = async () => {
             imageUrls.push(url);
         }
 
-        // Save to DB
         await addDoc(collection(db, "reviews"), {
-            ownerId: formUid, 
-            name, 
-            contact, // Saved securely
-            country,
-            msg, 
-            rating: currentRating,
-            photos: imageUrls, 
-            date: Date.now()
+            ownerId: formUid, name, contact, country, msg, rating: currentRating, photos: imageUrls, date: Date.now()
         });
-
-        // Success UI
         document.getElementById('view-form').innerHTML = `<div class='card-box'><h2>Thank You!</h2><p>Review Submitted Successfully.</p></div>`;
-
     } catch (e) {
-        console.error(e);
-        alert("Error: " + e.message);
-        // RESET BUTTON IF ERROR
-        btn.innerText = "Submit Review"; 
-        btn.disabled = false;
+        console.error(e); alert("Error: " + e.message); btn.innerText = "Submit Review"; btn.disabled = false;
     }
 };
 
-// 3. LOAD REVIEWS (PRIVACY LOGIC)
 async function loadReviews(uid, divId) {
     try {
         const q = query(collection(db, "reviews"), where("ownerId", "==", uid), orderBy("date", "desc"));
         const snap = await getDocs(q);
-        
-        let reviews = [];
-        let totalStars = 0;
+        let reviews = []; let totalStars = 0;
         
         snap.forEach(d => {
-            const r = d.data();
-            reviews.push(r);
-            totalStars += r.rating;
+            const r = d.data(); reviews.push(r); totalStars += r.rating;
         });
 
         if(divId === 'reviews-list') {
@@ -243,27 +237,21 @@ async function loadReviews(uid, divId) {
                 r.photos.forEach(src => imgHtml += `<a href="${src}" target="_blank"><img src="${src}"></a>`);
                 imgHtml += `</div>`;
             }
-
-            // PRIVACY LOGIC
             let contactInfo = "";
-            if(divId === 'reviews-list') { // Only show in Admin Dashboard
+            if(divId === 'reviews-list') {
                 contactInfo = `<div class="admin-badge"><i class="fa-solid fa-envelope"></i> ${r.contact} (${r.country})</div>`;
             }
-
             div.innerHTML += `
                 <div class="review-card">
                     <div class="stars">${stars}</div>
                     <p style="color:#334155; line-height:1.5;">"${r.msg}"</p>
                     ${imgHtml}
                     <div style="margin-top:15px; font-weight:bold; font-size:0.9rem;">- ${r.name}</div>
-                    ${contactInfo} <!-- Only visible to you -->
+                    ${contactInfo}
                 </div>
             `;
         });
-    } catch(e) {
-        console.error(e);
-        if(e.code === 'failed-precondition') console.log("Index missing");
-    }
+    } catch(e) { console.error(e); }
 }
 
 function showView(id) {
