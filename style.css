@@ -1,55 +1,71 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-    --primary: #4f46e5; /* Indigo - More professional than Gold */
-    --star: #f59e0b;
+    --primary: #4f46e5;
     --dark: #0f172a;
     --bg: #f3f4f6;
-    --surface: #ffffff;
+    --white: #ffffff;
     --border: #e5e7eb;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; outline: none; }
 body { background: var(--bg); color: var(--dark); height: 100vh; overflow: hidden; }
 .hidden { display: none !important; }
 
 /* Dashboard Layout */
 .dashboard { display: flex; height: 100vh; }
-.sidebar { width: 260px; background: var(--dark); color: white; display: flex; flex-direction: column; padding: 25px; flex-shrink: 0; }
-.main { flex: 1; padding: 40px; overflow-y: auto; }
+.sidebar { width: 260px; background: var(--dark); color: white; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; transition: 0.3s; z-index: 50; }
+.main { flex: 1; padding: 30px; overflow-y: auto; width: 100%; }
 
-/* Sidebar */
-.brand { font-size: 1.4rem; font-weight: 800; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; color: white; }
-.menu-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 10px; margin-top: 20px; font-weight: 700; }
+/* Mobile Menu */
+.mobile-nav { display: none; padding: 15px; background: var(--dark); color: white; justify-content: space-between; align-items: center; }
+.hamburger { font-size: 1.5rem; cursor: pointer; }
+
+/* Responsive Dashboard */
+@media (max-width: 768px) {
+    .dashboard { flex-direction: column; }
+    .sidebar { position: fixed; height: 100vh; left: -260px; top: 0; width: 260px; }
+    .sidebar.open { left: 0; }
+    .mobile-nav { display: flex; }
+    .main { padding: 15px; margin-top: 0; }
+    .stats-grid { grid-template-columns: 1fr !important; }
+    .masonry { columns: 1 !important; }
+}
+
+/* Sidebar Components */
+.brand { font-size: 1.4rem; font-weight: 800; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; color: white; }
 .menu-btn {
     width: 100%; text-align: left; background: rgba(255,255,255,0.05); color: #e2e8f0;
     border: none; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; cursor: pointer;
-    font-size: 0.95rem; transition: 0.2s; display: flex; align-items: center; gap: 10px;
+    font-size: 0.95rem; display: flex; align-items: center; gap: 10px;
 }
-.menu-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+.menu-btn:hover, .menu-btn.active { background: var(--primary); color: white; }
 .menu-btn.logout { color: #f87171; background: transparent; margin-top: auto; }
-.menu-btn.logout:hover { background: rgba(248, 113, 113, 0.1); }
 
-/* Main Content */
-h1 { font-size: 1.8rem; margin-bottom: 5px; }
-.subtitle { color: #64748b; margin-bottom: 30px; }
+/* Stats & Grid */
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+.stat-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); }
+.stat-val { font-size: 1.8rem; font-weight: 800; margin-top: 5px; }
 
-/* Stats Grid */
-.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
-.stat-card { background: white; padding: 25px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-.stat-val { font-size: 2rem; font-weight: 800; color: var(--dark); margin-top: 5px; }
-.stat-label { color: #64748b; font-size: 0.9rem; font-weight: 600; }
+/* General UI */
+.btn { padding: 12px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; background: var(--primary); color: white; width: 100%; }
+.btn-sm { width: auto; padding: 8px 15px; font-size: 0.9rem; }
+.btn-red { background: #ef4444; }
+.btn-green { background: #25D366; } /* WhatsApp Color */
+input, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; background: white; }
 
-/* Forms & Inputs */
-input, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; }
-.btn { padding: 12px 24px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; background: var(--primary); color: white; transition: 0.2s; width: 100%; font-size: 1rem; }
-.btn:hover { opacity: 0.9; }
-
-/* Reviews List */
+/* Reviews */
 .masonry { columns: 3 250px; column-gap: 20px; }
-.review-card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; break-inside: avoid; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-.stars { color: var(--star); font-size: 1.1rem; margin-bottom: 10px; letter-spacing: 2px; }
+.review-card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; break-inside: avoid; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+.review-imgs { display: flex; gap: 5px; margin-top: 10px; }
+.review-imgs img { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer; }
 
-/* Auth & Form Views */
-.center-screen { display: flex; align-items: center; justify-content: center; height: 100vh; background: #f1f5f9; padding: 20px; }
-.card-box { background: white; padding: 40px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); width: 100%; max-width: 450px; text-align: center; }
+/* Public Views */
+.center-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+.card-box { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1); border: 1px solid var(--border); text-align: center; }
+
+/* Photo Upload UI */
+.photo-preview-container { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+.photo-thumb { width: 60px; height: 60px; position: relative; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.remove-photo { position: absolute; top: 0; right: 0; background: red; color: white; width: 15px; height: 15px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
