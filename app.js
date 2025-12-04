@@ -1,37 +1,42 @@
-import { auth, db, storage } from './firebase-config.js';
+import { auth, db } from './firebase-config.js';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs, addDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 const params = new URLSearchParams(window.location.search);
 const formUid = params.get('f');
 const wallUid = params.get('w');
 let currentRating = 5;
 
-// --- INITIALIZATION ---
+// --- INIT ---
 onAuthStateChanged(auth, async (user) => {
-    // 1. PUBLIC VIEWS (No Login Required)
+    // 1. PUBLIC VIEW (Form)
     if (formUid) { 
-        showView('view-form'); 
-        // Load Owner Name for form
-        getDoc(doc(db, "users", formUid)).then(s => {
-            if(s.exists()) document.getElementById('form-owner').innerText = s.data().name || "Us";
-        });
+        showView('view-form');
+        // Load Business Name
+        const snap = await getDoc(doc(db, "users", formUid));
+        if (snap.exists()) {
+            const d = snap.data();
+            document.getElementById('form-biz-name').innerText = d.bizName || "Leave a Review";
+            document.getElementById('form-msg').innerText = d.welcomeMsg || "How was your experience with us?";
+        }
         return; 
     }
+    // 2. PUBLIC VIEW (Wall)
     if (wallUid) { 
         showView('view-wall'); 
-        loadReviews(wallUid, 'wall-list', true); // TRUE = Use Cache
+        loadReviews(wallUid, 'wall-list', true);
         return; 
     }
 
-    // 2. ADMIN VIEWS (Login Required)
+    // 3. DASHBOARD
     if (user) {
         const snap = await getDoc(doc(db, "users", user.uid));
-        // CHECK LICENSE
         if (snap.exists() && snap.data().plan === 'lifetime') {
             showView('view-dash');
-            loadReviews(user.uid, 'admin-list', false); // FALSE = No Cache (Live Data)
+            loadReviews(user.uid, 'reviews-list', false);
+            // Load Settings into Inputs
+            document.getElementById('set-bizname').value = snap.data().bizName || "";
+            document.getElementById('set-msg').value = snap.data().welcomeMsg || "How was your experience with us?";
         } else {
             showView('view-lock');
         }
@@ -40,20 +45,35 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- ADMIN FUNCTIONS ---
+// --- DASHBOARD ACTIONS ---
+window.switchTab = (tab) => {
+    document.getElementById('tab-reviews').classList.add('hidden');
+    document.getElementById('tab-settings').classList.add('hidden');
+    document.getElementById('tab-' + tab).classList.remove('hidden');
+};
+
+window.saveSettings = async () => {
+    const name = document.getElementById('set-bizname').value;
+    const msg = document.getElementById('set-msg').value;
+    
+    await updateDoc(doc(db, "users", auth.currentUser.uid), {
+        bizName: name,
+        welcomeMsg: msg
+    });
+    alert("Settings Saved!");
+};
+
+// --- AUTH & LICENSE ---
 window.handleAuth = async () => {
     const e = document.getElementById('email').value;
     const p = document.getElementById('pass').value;
-    if(!e || !p) return alert("Enter details");
-    
     try {
         await signInWithEmailAndPassword(auth, e, p);
     } catch {
-        // Auto Register
         try {
             const c = await createUserWithEmailAndPassword(auth, e, p);
             await setDoc(doc(db, "users", c.user.uid), { 
-                email: e, name: e.split('@')[0], plan: 'free', createdAt: Date.now() 
+                email: e, plan: 'free', bizName: "My Business" 
             });
             location.reload();
         } catch(err) { alert(err.message); }
@@ -68,24 +88,23 @@ window.redeemCode = async () => {
     const snap = await getDocs(q);
 
     if(!snap.empty && snap.docs[0].data().status === 'active') {
-        await updateDoc(doc(db, "licenses", snap.docs[0].id), { status: 'used', usedBy: auth.currentUser.uid });
+        await updateDoc(doc(db, "licenses", snap.docs[0].id), { status: 'used' });
         await updateDoc(doc(db, "users", auth.currentUser.uid), { plan: 'lifetime' });
-        alert("Account Unlocked!");
         location.reload();
     } else {
-        alert("Invalid or Used Code");
+        alert("Invalid Code");
     }
-};
-
-window.copyLink = (type) => {
-    const url = `${window.location.origin}${window.location.pathname}?${type === 'form' ? 'f' : 'w'}=${auth.currentUser.uid}`;
-    navigator.clipboard.writeText(url);
-    alert("Copied to clipboard!");
 };
 
 window.logout = () => signOut(auth).then(()=>location.reload());
 
-// --- PUBLIC FUNCTIONS ---
+window.copyLink = (type) => {
+    const url = `${window.location.origin}${window.location.pathname}?${type === 'form' ? 'f' : 'w'}=${auth.currentUser.uid}`;
+    navigator.clipboard.writeText(url);
+    alert("Copied!");
+};
+
+// --- REVIEW LOGIC ---
 window.setStar = (n) => {
     currentRating = n;
     const stars = document.getElementById('stars').children;
@@ -95,77 +114,45 @@ window.setStar = (n) => {
 window.submitReview = async () => {
     const name = document.getElementById('rev-name').value;
     const msg = document.getElementById('rev-msg').value;
-    const file = document.getElementById('rev-img').files[0];
-    const btn = document.getElementById('sub-btn');
-
-    if(!name || !msg) return alert("Please fill details");
-    btn.innerText = "Sending..."; btn.disabled = true;
-
-    let imgUrl = null;
-    if(file) {
-        if(file.size > 1048576) { // 1MB Limit Client Side Check
-            btn.innerText = "Submit"; btn.disabled = false;
-            return alert("Image too large (Max 1MB)");
-        }
-        const sRef = ref(storage, `reviews/${Date.now()}_${file.name}`);
-        await uploadBytes(sRef, file);
-        imgUrl = await getDownloadURL(sRef);
-    }
+    if(!name || !msg) return alert("Please details");
 
     await addDoc(collection(db, "reviews"), {
-        ownerId: formUid, name, msg, rating: currentRating, photo: imgUrl, date: Date.now()
+        ownerId: formUid, name, msg, rating: currentRating, date: Date.now()
     });
-
-    document.getElementById('view-form').innerHTML = `<div class='card'><h2>Thank You!</h2><p>Review sent.</p></div>`;
+    document.getElementById('view-form').innerHTML = `<div class='card-box'><h2>Thank You!</h2><p>Review Sent.</p></div>`;
 };
 
-// --- CORE LOGIC (With Cost Saving) ---
 async function loadReviews(uid, divId, useCache) {
-    let reviews = [];
-    const cacheKey = `rev_${uid}`;
-    
-    // 1. Try Cache first (Saves Reads)
-    if(useCache) {
-        const cached = localStorage.getItem(cacheKey);
-        const time = localStorage.getItem(cacheKey + '_t');
-        if(cached && time && (Date.now() - time < 3600000)) { // 1 Hour Cache
-            console.log("Using Cache (Free)");
-            reviews = JSON.parse(cached);
-            renderReviews(reviews, divId);
-            return;
-        }
-    }
-
-    // 2. Fetch from Firebase
-    console.log("Fetching from DB (Cost)");
+    // 1. Fetch from DB
     const q = query(collection(db, "reviews"), where("ownerId", "==", uid), orderBy("date", "desc"));
     const snap = await getDocs(q);
     
-    snap.forEach(d => reviews.push(d.data()));
+    let reviews = [];
+    let totalStars = 0;
     
-    // 3. Save to Cache
-    if(useCache) {
-        localStorage.setItem(cacheKey, JSON.stringify(reviews));
-        localStorage.setItem(cacheKey + '_t', Date.now());
+    snap.forEach(d => {
+        const r = d.data();
+        reviews.push(r);
+        totalStars += r.rating;
+    });
+
+    // 2. Update Stats (Only in Dashboard)
+    if(divId === 'reviews-list') {
+        document.getElementById('stat-count').innerText = reviews.length;
+        document.getElementById('stat-avg').innerText = reviews.length ? (totalStars / reviews.length).toFixed(1) : "0.0";
     }
 
-    renderReviews(reviews, divId);
-}
-
-function renderReviews(list, divId) {
+    // 3. Render
     const div = document.getElementById(divId);
-    div.innerHTML = list.length ? '' : '<p>No reviews yet.</p>';
+    div.innerHTML = reviews.length ? '' : '<p>No reviews yet.</p>';
     
-    list.forEach(r => {
+    reviews.forEach(r => {
         let stars = "★".repeat(r.rating);
         div.innerHTML += `
             <div class="review-card">
                 <div class="stars">${stars}</div>
-                <p style="color:#334155; line-height:1.5;">"${r.msg}"</p>
-                <div class="user-info">
-                    ${r.photo ? `<img src="${r.photo}" class="user-img">` : '<div class="user-img" style="background:#ddd"></div>'}
-                    <span>${r.name}</span>
-                </div>
+                <p style="color:#334155; line-height:1.6;">"${r.msg}"</p>
+                <div style="margin-top:15px; font-weight:bold; font-size:0.9rem;">- ${r.name}</div>
             </div>
         `;
     });
