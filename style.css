@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&display=swap');
 
 :root {
     --primary: #4f46e5;
@@ -6,30 +8,40 @@
     --bg: #f3f4f6;
     --white: #ffffff;
     --border: #e5e7eb;
+    
+    /* DYNAMIC VARIABLES (For Customization) */
+    --wall-bg: #f3f4f6;
+    --card-bg: #ffffff;
+    --text-color: #334155;
+    --star-color: #f59e0b;
+    --font-family: 'Plus Jakarta Sans', sans-serif;
+    --font-size: 16px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; outline: none; }
-body { background: var(--bg); color: var(--dark); height: 100vh; overflow: hidden; }
+* { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+body { background: var(--bg); color: var(--dark); height: 100vh; overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; }
 .hidden { display: none !important; }
 
 /* Dashboard Layout */
 .dashboard { display: flex; height: 100vh; }
-.sidebar { width: 260px; background: var(--dark); color: white; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; transition: 0.3s; z-index: 50; }
+.sidebar { width: 260px; background: var(--dark); color: white; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; z-index: 50; transition: 0.3s; }
 .main { flex: 1; padding: 30px; overflow-y: auto; width: 100%; }
 
-/* Mobile Menu */
+/* Mobile & Small Screen Fixes (300px+) */
 .mobile-nav { display: none; padding: 15px; background: var(--dark); color: white; justify-content: space-between; align-items: center; }
 .hamburger { font-size: 1.5rem; cursor: pointer; }
 
-/* Responsive Dashboard */
 @media (max-width: 768px) {
     .dashboard { flex-direction: column; }
     .sidebar { position: fixed; height: 100vh; left: -260px; top: 0; width: 260px; }
     .sidebar.open { left: 0; }
     .mobile-nav { display: flex; }
-    .main { padding: 15px; margin-top: 0; }
+    .main { padding: 15px; padding-bottom: 80px; } /* Padding for scrolling */
     .stats-grid { grid-template-columns: 1fr !important; }
-    .masonry { columns: 1 !important; }
+    
+    /* Masonry Fix for Mobile */
+    .masonry { columns: 1 !important; display: flex; flex-direction: column; gap: 15px; }
+    .review-card { width: 100%; display: block; break-inside: auto; }
 }
 
 /* Sidebar Components */
@@ -37,7 +49,7 @@ body { background: var(--bg); color: var(--dark); height: 100vh; overflow: hidde
 .menu-btn {
     width: 100%; text-align: left; background: rgba(255,255,255,0.05); color: #e2e8f0;
     border: none; padding: 12px 15px; border-radius: 8px; margin-bottom: 8px; cursor: pointer;
-    font-size: 0.95rem; display: flex; align-items: center; gap: 10px;
+    font-size: 0.95rem; display: flex; align-items: center; gap: 10px; font-family: 'Plus Jakarta Sans', sans-serif;
 }
 .menu-btn:hover, .menu-btn.active { background: var(--primary); color: white; }
 .menu-btn.logout { color: #f87171; background: transparent; margin-top: auto; }
@@ -50,40 +62,43 @@ body { background: var(--bg); color: var(--dark); height: 100vh; overflow: hidde
 /* General UI */
 .btn { padding: 12px 20px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; background: var(--primary); color: white; width: 100%; }
 .btn-sm { width: auto; padding: 8px 15px; font-size: 0.9rem; }
-.btn-red { background: #ef4444; }
-.btn-green { background: #25D366; } /* WhatsApp Color */
-input, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; background: white; }
+.btn-outline { background: transparent; border: 1px solid #cbd5e1; color: var(--dark); }
+input, textarea, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; background: white; font-size: 16px; } /* 16px prevents zoom on iOS */
 
-/* Reviews */
-.masonry { columns: 3 250px; column-gap: 20px; }
-.review-card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; break-inside: avoid; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-.review-imgs { display: flex; gap: 5px; margin-top: 10px; }
-.review-imgs img { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer; }
+/* REVIEWS WALL (Customizable) */
+.wall-container { background-color: var(--wall-bg); min-height: 100vh; padding: 20px; font-family: var(--font-family); }
+.masonry { columns: 3 250px; column-gap: 20px; max-width: 1200px; margin: 0 auto; }
+.review-card { 
+    background: var(--card-bg); 
+    color: var(--text-color);
+    padding: 20px; border-radius: 12px; margin-bottom: 20px; 
+    break-inside: avoid; box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+    border: 1px solid rgba(0,0,0,0.05);
+    font-size: var(--font-size);
+}
+.stars { color: var(--star-color); font-size: 1.2em; margin-bottom: 10px; letter-spacing: 2px; }
+.review-imgs { display: flex; gap: 5px; margin-top: 10px; flex-wrap: wrap; }
+.review-imgs img { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid #eee; }
+
+/* MY REVIEWERS LIST (Table) */
+.month-group { margin-bottom: 30px; }
+.month-header { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+.reviewer-row { background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+.reviewer-row strong { color: var(--dark); }
+.reviewer-meta { font-size: 0.85rem; color: #64748b; display: flex; flex-wrap: wrap; gap: 10px; }
+.reviewer-contact { background: #f0f9ff; color: #0369a1; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; display: inline-block; margin-top: 5px; word-break: break-all; }
+
+/* Privacy Note */
+.privacy-note { font-size: 0.75rem; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 6px; margin-bottom: 15px; line-height: 1.4; border: 1px solid #e2e8f0; }
+.privacy-note i { color: #4f46e5; margin-right: 5px; }
+
+/* Photo Upload */
+.photo-preview-container { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
+.photo-thumb { width: 60px; height: 60px; position: relative; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.remove-photo { position: absolute; top: 0; right: 0; background: red; color: white; width: 20px; height: 20px; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.upload-error { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 10px; display: none; }
 
 /* Public Views */
 .center-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
 .card-box { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1); border: 1px solid var(--border); text-align: center; }
-
-/* Photo Upload UI */
-.photo-preview-container { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
-.photo-thumb { width: 60px; height: 60px; position: relative; border-radius: 6px; overflow: hidden; border: 1px solid #ddd; }
-.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.remove-photo { position: absolute; top: 0; right: 0; background: red; color: white; width: 15px; height: 15px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-/* Add to your existing style.css */
-
-/* File Upload Error */
-.upload-error {
-    background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px;
-    font-size: 0.85rem; margin-bottom: 10px; display: none; /* Hidden by default */
-}
-.upload-error a { color: #b91c1c; font-weight: bold; text-decoration: underline; }
-
-/* Admin Only Data (Contact Info) */
-.admin-badge {
-    background: #f1f5f9; color: #475569; padding: 5px 10px; border-radius: 6px;
-    font-size: 0.8rem; margin-top: 10px; display: inline-block; border: 1px solid #e2e8f0;
-}
-.admin-badge i { margin-right: 5px; }
-
-/* Form Inputs */
-select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; background: white; }
