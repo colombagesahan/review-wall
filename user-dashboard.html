@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Store Dashboard</title>
+    <title>My Store Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -10,73 +10,135 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
 </head>
-<body class="bg-gray-50" x-data="userPanel()">
+<body class="bg-gray-100 font-sans" x-data="userStore()">
 
-    <div class="max-w-4xl mx-auto p-8">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold">My Store Dashboard</h1>
-            <div class="space-x-2">
-                <a :href="'shop.html?id='+uid" target="_blank" class="bg-green-600 text-white px-4 py-2 rounded">View My Shop</a>
-                <button @click="auth.signOut()" class="text-gray-500">Logout</button>
+    <!-- Top Nav -->
+    <nav class="bg-white shadow-sm sticky top-0 z-20">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-store text-green-600 text-xl"></i>
+                <span class="font-bold text-gray-800 text-lg">Store Builder</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a :href="'shop.html?id=' + uid" target="_blank" class="text-blue-600 hover:underline text-sm font-medium">
+                    <i class="fas fa-external-link-alt"></i> View Live Shop
+                </a>
+                <button @click="auth.signOut()" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm font-bold text-gray-700">Logout</button>
             </div>
         </div>
+    </nav>
 
-        <!-- Store Settings -->
-        <div class="bg-white p-6 rounded shadow mb-8">
-            <h2 class="text-xl font-bold mb-4">Store Design</h2>
-            <div class="space-y-4">
-                <input x-model="settings.name" placeholder="Store Name" class="w-full border p-2 rounded">
-                <input x-model="settings.hero" placeholder="Hero Banner Text" class="w-full border p-2 rounded">
-                <div class="flex items-center gap-2">
-                    <span>Theme Color:</span>
-                    <input type="color" x-model="settings.color" class="h-10 w-20">
-                </div>
-                <button @click="saveSettings" class="bg-blue-600 text-white px-6 py-2 rounded">Save Design</button>
-            </div>
-        </div>
-
-        <!-- Product Importer -->
-        <div class="bg-white p-6 rounded shadow">
-            <h2 class="text-xl font-bold mb-4">Import Products</h2>
-            <p class="mb-4 text-sm text-gray-500">Products provided by your Agency.</p>
+    <div class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Left Column: Settings -->
+        <div class="md:col-span-1 space-y-6">
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <template x-for="p in agencyCatalog">
-                    <div class="border p-4 rounded text-center">
-                        <img :src="p.image" class="h-32 mx-auto mb-2">
-                        <h4 class="font-bold" x-text="p.name"></h4>
-                        <p class="text-xs">Base: $<span x-text="p.price"></span></p>
-                        
-                        <div class="mt-2">
-                            <input x-model="p.myPrice" placeholder="My Price" class="border p-1 w-20 text-center text-sm">
-                            <button @click="importProduct(p)" class="block w-full mt-1 bg-gray-800 text-white text-xs py-1 rounded">Add to Shop</button>
+            <!-- Store Settings Card -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fas fa-paint-brush text-purple-500"></i> Design & Branding</h2>
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Store Name</label>
+                        <input x-model="settings.name" class="w-full border p-2 rounded focus:ring-2 focus:ring-green-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Headline Text</label>
+                        <textarea x-model="settings.hero" class="w-full border p-2 rounded focus:ring-2 focus:ring-green-500 outline-none" rows="2"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-500 uppercase">Brand Color</label>
+                        <div class="flex gap-2 mt-1">
+                            <input type="color" x-model="settings.color" class="h-10 w-12 rounded cursor-pointer border">
+                            <div class="flex-1 bg-gray-100 rounded flex items-center px-3 text-sm text-gray-600" x-text="settings.color"></div>
                         </div>
                     </div>
-                </template>
+                </div>
+                <button @click="saveSettings" class="w-full mt-4 bg-gray-900 text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">Save Changes</button>
+            </div>
+
+            <!-- Active Products Summary -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="font-bold text-gray-800 mb-2">My Inventory</h2>
+                <p class="text-3xl font-bold text-green-600" x-text="myProducts.length">0</p>
+                <p class="text-xs text-gray-400">Products live on your store</p>
             </div>
         </div>
 
-        <!-- My Inventory -->
-        <div class="mt-8">
-            <h2 class="text-xl font-bold mb-4">Active on My Shop</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <template x-for="p in myProducts">
-                    <div class="bg-white p-4 rounded shadow border-l-4 border-green-500">
-                        <h4 class="font-bold" x-text="p.name"></h4>
-                        <p class="text-green-600 font-bold">$<span x-text="p.price"></span></p>
-                        <button @click="deleteProduct(p.id)" class="text-red-500 text-xs mt-2">Remove</button>
-                    </div>
-                </template>
+        <!-- Right Column: Products -->
+        <div class="md:col-span-2 space-y-6">
+            
+            <!-- Import Section -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="font-bold text-xl text-gray-800 mb-4">Product Marketplace</h2>
+                <p class="text-sm text-gray-500 mb-6">Select products from your Agency to sell on your store. Set your own price to make a profit.</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2">
+                    <template x-for="p in agencyCatalog">
+                        <div class="border border-gray-100 rounded-lg p-3 hover:shadow-md transition bg-gray-50">
+                            <div class="flex gap-4">
+                                <img :src="p.image" class="w-16 h-16 rounded object-cover bg-white">
+                                <div class="flex-1">
+                                    <h4 class="font-bold text-sm text-gray-800 line-clamp-1" x-text="p.name"></h4>
+                                    <p class="text-xs text-gray-500">Cost: $<span x-text="p.price"></span></p>
+                                    
+                                    <div class="mt-2 flex items-center gap-2">
+                                        <div class="relative flex-1">
+                                            <span class="absolute left-2 top-1 text-gray-400 text-xs">$</span>
+                                            <input type="number" x-model="p.myPrice" class="w-full pl-5 py-1 text-sm border rounded">
+                                        </div>
+                                        <button @click="importProduct(p)" class="bg-green-600 text-white text-xs px-3 py-1.5 rounded font-bold hover:bg-green-700">Add</button>
+                                    </div>
+                                    <!-- Profit Preview -->
+                                    <p class="text-[10px] text-right mt-1 text-green-600 font-bold">
+                                        Profit: $<span x-text="(p.myPrice - p.price).toFixed(2)"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </div>
+
+            <!-- Active List -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                <h2 class="font-bold text-xl text-gray-800 mb-4">Active Products</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-gray-500 uppercase">
+                            <tr>
+                                <th class="p-3">Product</th>
+                                <th class="p-3">Selling Price</th>
+                                <th class="p-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <template x-for="p in myProducts">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-3 font-medium flex items-center gap-2">
+                                        <img :src="p.image" class="w-8 h-8 rounded">
+                                        <span x-text="p.name"></span>
+                                    </td>
+                                    <td class="p-3 font-bold text-green-600" x-text="'$' + p.price"></td>
+                                    <td class="p-3 text-right">
+                                        <button @click="deleteProduct(p.id)" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
-        function userPanel() {
+        function userStore() {
             return {
                 uid: null,
                 agencyId: null,
-                settings: {name:'', hero:'', color:'#000'},
+                settings: {name:'My Store', hero:'Welcome', color:'#10B981'},
                 agencyCatalog: [],
                 myProducts: [],
 
@@ -84,25 +146,12 @@
                     auth.onAuthStateChanged(async u => {
                         if(u) {
                             this.uid = u.uid;
-                            // 1. Check if user document exists (created by Agency?)
-                            // We need to link the Auth UID to the 'email' doc created by Agency
-                            // This is a complex step in No-Code. 
-                            // SIMPLIFIED: We assume the user creates their OWN account in Index.html
-                            // and we find their role.
-                            
                             const userDoc = await db.collection('users').doc(this.uid).get();
-                            // Note: In a real app, you need to write logic to link the invite to this UID.
-                            // For this MVP, we will assume the user manually inputs their Agency ID or we find it.
-                            
-                            // Let's assume we find the doc:
                             if(userDoc.exists) {
                                 const data = userDoc.data();
                                 this.agencyId = data.parentAgency;
                                 if(data.settings) this.settings = data.settings;
                                 this.loadData();
-                            } else {
-                                // If first time login, we need to ask "Who is your agency?" or auto-assign for demo
-                                alert("Please ask your Agency for the Invite Link (Not implemented in MVP)");
                             }
                         } else {
                             window.location.href = 'index.html';
@@ -111,18 +160,21 @@
                 },
 
                 async loadData() {
-                    // Load Agency Catalog
-                    const catSnap = await db.collection('agencies').doc(this.agencyId).collection('master_catalog').get();
-                    this.agencyCatalog = catSnap.docs.map(d => ({...d.data(), myPrice: d.data().price + 5 })); // Default markup
+                    // Get Master Catalog
+                    const cSnap = await db.collection('agencies').doc(this.agencyId).collection('master_catalog').get();
+                    this.agencyCatalog = cSnap.docs.map(d => ({
+                        ...d.data(), 
+                        myPrice: d.data().price + 5 // Default Markup suggestion
+                    }));
 
-                    // Load My Products
-                    const mySnap = await db.collection('users').doc(this.uid).collection('products').get();
-                    this.myProducts = mySnap.docs.map(d => ({id: d.id, ...d.data()}));
+                    // Get My Products
+                    const mSnap = await db.collection('users').doc(this.uid).collection('products').get();
+                    this.myProducts = mSnap.docs.map(d => ({id: d.id, ...d.data()}));
                 },
 
                 async saveSettings() {
                     await db.collection('users').doc(this.uid).update({ settings: this.settings });
-                    alert("Saved!");
+                    alert("Store design updated!");
                 },
 
                 async importProduct(p) {
@@ -133,10 +185,12 @@
                     });
                     this.loadData();
                 },
-                
+
                 async deleteProduct(id) {
-                    await db.collection('users').doc(this.uid).collection('products').doc(id).delete();
-                    this.loadData();
+                    if(confirm("Remove from store?")) {
+                        await db.collection('users').doc(this.uid).collection('products').doc(id).delete();
+                        this.loadData();
+                    }
                 }
             }
         }
