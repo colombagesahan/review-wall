@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Store Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body class="bg-gray-50" x-data="userPanel()">
+
+    <div class="max-w-4xl mx-auto p-8">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold">My Store Dashboard</h1>
+            <div class="space-x-2">
+                <a :href="'shop.html?id='+uid" target="_blank" class="bg-green-600 text-white px-4 py-2 rounded">View My Shop</a>
+                <button @click="auth.signOut()" class="text-gray-500">Logout</button>
+            </div>
+        </div>
+
+        <!-- Store Settings -->
+        <div class="bg-white p-6 rounded shadow mb-8">
+            <h2 class="text-xl font-bold mb-4">Store Design</h2>
+            <div class="space-y-4">
+                <input x-model="settings.name" placeholder="Store Name" class="w-full border p-2 rounded">
+                <input x-model="settings.hero" placeholder="Hero Banner Text" class="w-full border p-2 rounded">
+                <div class="flex items-center gap-2">
+                    <span>Theme Color:</span>
+                    <input type="color" x-model="settings.color" class="h-10 w-20">
+                </div>
+                <button @click="saveSettings" class="bg-blue-600 text-white px-6 py-2 rounded">Save Design</button>
+            </div>
+        </div>
+
+        <!-- Product Importer -->
+        <div class="bg-white p-6 rounded shadow">
+            <h2 class="text-xl font-bold mb-4">Import Products</h2>
+            <p class="mb-4 text-sm text-gray-500">Products provided by your Agency.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <template x-for="p in agencyCatalog">
+                    <div class="border p-4 rounded text-center">
+                        <img :src="p.image" class="h-32 mx-auto mb-2">
+                        <h4 class="font-bold" x-text="p.name"></h4>
+                        <p class="text-xs">Base: $<span x-text="p.price"></span></p>
+                        
+                        <div class="mt-2">
+                            <input x-model="p.myPrice" placeholder="My Price" class="border p-1 w-20 text-center text-sm">
+                            <button @click="importProduct(p)" class="block w-full mt-1 bg-gray-800 text-white text-xs py-1 rounded">Add to Shop</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- My Inventory -->
+        <div class="mt-8">
+            <h2 class="text-xl font-bold mb-4">Active on My Shop</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <template x-for="p in myProducts">
+                    <div class="bg-white p-4 rounded shadow border-l-4 border-green-500">
+                        <h4 class="font-bold" x-text="p.name"></h4>
+                        <p class="text-green-600 font-bold">$<span x-text="p.price"></span></p>
+                        <button @click="deleteProduct(p.id)" class="text-red-500 text-xs mt-2">Remove</button>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function userPanel() {
+            return {
+                uid: null,
+                agencyId: null,
+                settings: {name:'', hero:'', color:'#000'},
+                agencyCatalog: [],
+                myProducts: [],
+
+                init() {
+                    auth.onAuthStateChanged(async u => {
+                        if(u) {
+                            this.uid = u.uid;
+                            // 1. Check if user document exists (created by Agency?)
+                            // We need to link the Auth UID to the 'email' doc created by Agency
+                            // This is a complex step in No-Code. 
+                            // SIMPLIFIED: We assume the user creates their OWN account in Index.html
+                            // and we find their role.
+                            
+                            const userDoc = await db.collection('users').doc(this.uid).get();
+                            // Note: In a real app, you need to write logic to link the invite to this UID.
+                            // For this MVP, we will assume the user manually inputs their Agency ID or we find it.
+                            
+                            // Let's assume we find the doc:
+                            if(userDoc.exists) {
+                                const data = userDoc.data();
+                                this.agencyId = data.parentAgency;
+                                if(data.settings) this.settings = data.settings;
+                                this.loadData();
+                            } else {
+                                // If first time login, we need to ask "Who is your agency?" or auto-assign for demo
+                                alert("Please ask your Agency for the Invite Link (Not implemented in MVP)");
+                            }
+                        } else {
+                            window.location.href = 'index.html';
+                        }
+                    });
+                },
+
+                async loadData() {
+                    // Load Agency Catalog
+                    const catSnap = await db.collection('agencies').doc(this.agencyId).collection('master_catalog').get();
+                    this.agencyCatalog = catSnap.docs.map(d => ({...d.data(), myPrice: d.data().price + 5 })); // Default markup
+
+                    // Load My Products
+                    const mySnap = await db.collection('users').doc(this.uid).collection('products').get();
+                    this.myProducts = mySnap.docs.map(d => ({id: d.id, ...d.data()}));
+                },
+
+                async saveSettings() {
+                    await db.collection('users').doc(this.uid).update({ settings: this.settings });
+                    alert("Saved!");
+                },
+
+                async importProduct(p) {
+                    await db.collection('users').doc(this.uid).collection('products').add({
+                        name: p.name,
+                        image: p.image,
+                        price: parseFloat(p.myPrice)
+                    });
+                    this.loadData();
+                },
+                
+                async deleteProduct(id) {
+                    await db.collection('users').doc(this.uid).collection('products').doc(id).delete();
+                    this.loadData();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
