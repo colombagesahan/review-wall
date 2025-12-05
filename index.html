@@ -4,15 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgencyFlow - SaaS Platform</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Firebase -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- Your Config File -->
     <script src="firebase-config.js"></script>
 </head>
-<body class="bg-white text-gray-800 font-sans" x-data="authLogic()">
+<body class="bg-white text-gray-800 font-sans" x-data="authLogic()" x-init="initApp()">
 
     <!-- Navbar -->
     <nav class="container mx-auto p-6 flex justify-between items-center">
@@ -25,11 +28,22 @@
 
     <!-- Hero Section -->
     <header class="container mx-auto px-6 py-20 text-center">
-        <h1 class="text-5xl font-extrabold mb-6 leading-tight">Your White-Label <br><span class="text-blue-600">Dropshipping Platform</span></h1>
-        <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">Agencies: Build your own Wix/Shopify competitor. Manage users, set products, and earn.</p>
+        <!-- Message changes if they are invited -->
+        <div x-show="inviteAgencyId" class="bg-green-100 text-green-800 p-4 rounded-lg inline-block mb-6 font-bold">
+            <i class="fas fa-envelope-open"></i> You have been invited to join an Agency!
+        </div>
+
+        <h1 class="text-5xl font-extrabold mb-6 leading-tight">
+            Your White-Label <br><span class="text-blue-600">Dropshipping Platform</span>
+        </h1>
+        <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
+            Agencies: Build your own Wix/Shopify competitor. Manage users, set products, and earn.
+        </p>
+        
         <div class="flex justify-center gap-4">
             <button @click="openLogin = true; mode='signup'" class="bg-yellow-400 text-yellow-900 font-bold px-8 py-4 rounded shadow hover:bg-yellow-300">
-                Buy LTD ($10)
+                <span x-show="!inviteAgencyId">Buy LTD ($10)</span>
+                <span x-show="inviteAgencyId">Create My Store Account</span>
             </button>
         </div>
     </header>
@@ -37,23 +51,27 @@
     <!-- Auth Modal -->
     <div x-show="openLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
         <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full relative">
-            <button @click="openLogin = false" class="absolute top-4 right-4 text-gray-400">&times;</button>
+            <button @click="openLogin = false" class="absolute top-4 right-4 text-gray-400 text-xl">&times;</button>
             
-            <h2 class="text-2xl font-bold mb-6 text-center" x-text="mode === 'login' ? 'Login' : 'Agency Registration'"></h2>
+            <h2 class="text-2xl font-bold mb-6 text-center">
+                <span x-show="mode === 'login'">Login</span>
+                <span x-show="mode === 'signup' && !inviteAgencyId">Agency Registration</span>
+                <span x-show="mode === 'signup' && inviteAgencyId">User Registration</span>
+            </h2>
             
             <div x-show="error" class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm" x-text="error"></div>
 
             <div class="space-y-4">
-                <input type="email" x-model="email" placeholder="Email Address" class="w-full border p-3 rounded">
-                <input type="password" x-model="password" placeholder="Password" class="w-full border p-3 rounded">
+                <input type="email" x-model="email" placeholder="Email Address" class="w-full border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="password" x-model="password" placeholder="Password" class="w-full border p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                 
-                <button @click="handleSubmit" class="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700">
+                <button @click="handleSubmit" class="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700 transition">
                     <span x-show="!loading" x-text="mode === 'login' ? 'Login' : 'Create Account'"></span>
                     <span x-show="loading">Processing...</span>
                 </button>
                 
-                <div class="text-center text-sm text-gray-500 mt-4 cursor-pointer" @click="toggleMode">
-                    <span x-text="mode === 'login' ? 'New Agency? Create Account' : 'Already have an account? Login'"></span>
+                <div class="text-center text-sm text-gray-500 mt-4 cursor-pointer hover:underline" @click="toggleMode">
+                    <span x-text="mode === 'login' ? 'Create Account' : 'Already have an account? Login'"></span>
                 </div>
             </div>
         </div>
@@ -63,11 +81,25 @@
         function authLogic() {
             return {
                 openLogin: false,
-                mode: 'login', // 'login' or 'signup'
+                mode: 'login', 
                 email: '',
                 password: '',
                 error: '',
                 loading: false,
+                inviteAgencyId: null, // Stores the ID if "?ref=" is in URL
+
+                initApp() {
+                    // Check URL for ?ref=AGENCY_ID
+                    const params = new URLSearchParams(window.location.search);
+                    const ref = params.get('ref');
+                    
+                    if (ref) {
+                        this.inviteAgencyId = ref;
+                        this.mode = 'signup';
+                        this.openLogin = true; // Auto open modal for invited users
+                        console.log("Invited by Agency:", ref);
+                    }
+                },
 
                 toggleMode() {
                     this.mode = this.mode === 'login' ? 'signup' : 'login';
@@ -77,40 +109,72 @@
                 async handleSubmit() {
                     this.loading = true;
                     this.error = '';
+                    
                     try {
                         if (this.mode === 'signup') {
-                            // 1. AGENCY REGISTRATION (AppSumo)
+                            // ===========================================
+                            // SIGNUP LOGIC
+                            // ===========================================
                             const cred = await auth.createUserWithEmailAndPassword(this.email, this.password);
-                            // Set Default Plan: Lifetime (Limit 100)
-                            await db.collection('agencies').doc(cred.user.uid).set({
-                                role: 'agency',
-                                plan: 'lifetime_10usd', 
-                                maxUsers: 100,
-                                createdAt: new Date()
-                            });
-                            window.location.href = 'agency-dashboard.html';
+                            
+                            if (this.inviteAgencyId) {
+                                // 1. USER SIGNUP (Invited by Agency)
+                                await db.collection('users').doc(cred.user.uid).set({
+                                    email: this.email,
+                                    parentAgency: this.inviteAgencyId, // LINK TO AGENCY
+                                    createdAt: new Date(),
+                                    role: 'user',
+                                    settings: { name: 'My New Store', color: '#10B981', hero: 'Welcome to my shop' }
+                                });
+                                alert("Account Created! Redirecting to Store Builder...");
+                                window.location.href = 'user-dashboard.html';
+
+                            } else {
+                                // 2. AGENCY SIGNUP (Buying the App)
+                                await db.collection('agencies').doc(cred.user.uid).set({
+                                    email: this.email,
+                                    role: 'agency',
+                                    plan: 'lifetime_10usd', 
+                                    maxUsers: 100,
+                                    createdAt: new Date()
+                                });
+                                alert("Agency Account Created! Redirecting to Dashboard...");
+                                window.location.href = 'agency-dashboard.html';
+                            }
+
                         } else {
-                            // 2. LOGIN (Could be Agency OR User)
+                            // ===========================================
+                            // LOGIN LOGIC
+                            // ===========================================
                             const cred = await auth.signInWithEmailAndPassword(this.email, this.password);
                             const uid = cred.user.uid;
 
-                            // Check if Agency
+                            // We need to find out if they are an Agency OR a User
+                            
+                            // Check Agency List first
                             const agencyDoc = await db.collection('agencies').doc(uid).get();
                             if (agencyDoc.exists) {
                                 window.location.href = 'agency-dashboard.html';
                                 return;
                             }
 
-                            // Check if User
+                            // Check User List second
                             const userDoc = await db.collection('users').doc(uid).get();
                             if (userDoc.exists) {
                                 window.location.href = 'user-dashboard.html';
                                 return;
                             }
                             
-                            throw new Error("Account role not found.");
+                            // If neither (Super Admin?)
+                            if (this.email === 'admin@admin.com') { // Optional hardcoded admin
+                                window.location.href = 'super-admin.html';
+                                return;
+                            }
+
+                            throw new Error("Account not found in database.");
                         }
                     } catch (e) {
+                        console.error(e);
                         this.error = e.message;
                     }
                     this.loading = false;
