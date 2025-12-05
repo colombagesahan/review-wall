@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Agency Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body class="bg-gray-100" x-data="agencyPanel()">
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-64 bg-slate-900 text-white flex flex-col">
+            <div class="p-6 text-xl font-bold border-b border-slate-800">AgencyFlow</div>
+            <nav class="flex-1 p-4 space-y-2">
+                <a @click="tab = 'users'" :class="tab==='users'?'bg-blue-600':''" class="block p-3 rounded cursor-pointer hover:bg-slate-800"><i class="fas fa-users mr-2"></i> User Management</a>
+                <a @click="tab = 'catalog'" :class="tab==='catalog'?'bg-blue-600':''" class="block p-3 rounded cursor-pointer hover:bg-slate-800"><i class="fas fa-tshirt mr-2"></i> Master Catalog</a>
+                <a @click="tab = 'plan'" :class="tab==='plan'?'bg-blue-600':''" class="block p-3 rounded cursor-pointer hover:bg-slate-800"><i class="fas fa-crown mr-2"></i> Subscription</a>
+            </nav>
+            <button @click="logout" class="p-4 text-gray-400 hover:text-white">Sign Out</button>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-8">
+            
+            <!-- Tab: Users -->
+            <div x-show="tab === 'users'">
+                <h2 class="text-3xl font-bold mb-4">My Users</h2>
+                
+                <!-- Limit Checker -->
+                <div class="bg-white p-4 rounded shadow mb-6 flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500">User Usage</p>
+                        <p class="text-2xl font-bold"><span x-text="myUsers.length"></span> / <span x-text="planMax"></span></p>
+                    </div>
+                    <button @click="createUser" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
+                        + Create New User
+                    </button>
+                </div>
+
+                <table class="min-w-full bg-white rounded shadow">
+                    <thead class="bg-gray-50"><tr><th class="p-4 text-left">Email</th><th class="p-4 text-left">Password (Initial)</th><th class="p-4 text-left">Store Link</th></tr></thead>
+                    <tbody>
+                        <template x-for="u in myUsers">
+                            <tr class="border-t">
+                                <td class="p-4" x-text="u.email"></td>
+                                <td class="p-4 text-gray-500" x-text="u.tempPass"></td>
+                                <td class="p-4"><a :href="'shop.html?id='+u.uid" target="_blank" class="text-blue-500 underline">View Shop</a></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Tab: Catalog -->
+            <div x-show="tab === 'catalog'">
+                <h2 class="text-3xl font-bold mb-4">Master Catalog (Printful)</h2>
+                <p class="mb-4 text-gray-600">Add products here. Your users will be able to import these to their stores.</p>
+                
+                <div class="bg-white p-6 rounded shadow mb-6">
+                    <div class="grid grid-cols-3 gap-4">
+                        <input x-model="newProd.name" placeholder="Product Name" class="border p-2 rounded">
+                        <input x-model="newProd.price" type="number" placeholder="Base Price" class="border p-2 rounded">
+                        <input x-model="newProd.image" placeholder="Image URL" class="border p-2 rounded">
+                    </div>
+                    <button @click="addToMaster" class="mt-4 bg-green-600 text-white px-4 py-2 rounded">Add to Agency Library</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <template x-for="p in masterProducts">
+                        <div class="bg-white p-4 rounded shadow">
+                            <img :src="p.image" class="w-full h-32 object-cover mb-2 bg-gray-200">
+                            <h4 class="font-bold" x-text="p.name"></h4>
+                            <p class="text-xs text-gray-500">Base Cost: $<span x-text="p.price"></span></p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Tab: Plan -->
+            <div x-show="tab === 'plan'">
+                <h2 class="text-3xl font-bold mb-4">Subscription Plan</h2>
+                <div class="bg-white p-8 rounded shadow max-w-xl">
+                    <h3 class="text-xl font-bold">Current Plan: <span x-text="planName" class="text-blue-600 uppercase"></span></h3>
+                    <p class="mt-2 text-gray-600">You can have up to <span x-text="planMax"></span> users.</p>
+                    
+                    <div x-show="planName === 'lifetime_10usd'" class="mt-6 border-t pt-6">
+                        <p class="font-bold mb-2">Need Unlimited Users?</p>
+                        <button @click="upgradePlan" class="bg-purple-600 text-white px-6 py-3 rounded font-bold hover:bg-purple-700 w-full">
+                            Upgrade to Pro ($10/month)
+                        </button>
+                        <p class="text-xs text-gray-400 mt-2 text-center">Unlocks unlimited user creation.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function agencyPanel() {
+            return {
+                tab: 'users',
+                user: null,
+                myUsers: [],
+                masterProducts: [],
+                planName: 'loading...',
+                planMax: 100,
+                newProd: {name:'', price:'', image:''},
+
+                init() {
+                    auth.onAuthStateChanged(u => {
+                        if(u) { this.user = u; this.loadData(); }
+                        else window.location.href = 'index.html';
+                    });
+                },
+
+                async loadData() {
+                    // 1. Get Agency Plan
+                    const doc = await db.collection('agencies').doc(this.user.uid).get();
+                    const data = doc.data();
+                    this.planName = data.plan;
+                    this.planMax = (data.plan === 'pro_monthly') ? 999999 : 100;
+
+                    // 2. Get Users
+                    const usersSnap = await db.collection('users').where('parentAgency', '==', this.user.uid).get();
+                    this.myUsers = usersSnap.docs.map(d => d.data());
+
+                    // 3. Get Master Products
+                    const prodSnap = await db.collection('agencies').doc(this.user.uid).collection('master_catalog').get();
+                    this.masterProducts = prodSnap.docs.map(d => d.data());
+                },
+
+                async createUser() {
+                    // Check Limit
+                    if (this.myUsers.length >= this.planMax) {
+                        alert("Upgrade Required! You reached your plan limit.");
+                        this.tab = 'plan';
+                        return;
+                    }
+
+                    const email = prompt("Enter User Email:");
+                    const pass = prompt("Create User Password:");
+                    if(!email || !pass) return;
+
+                    try {
+                        // In a real app, use a Firebase Function to create secondary users.
+                        // Here we simulate it by creating a document, but Auth needs distinct sessions.
+                        // TRICK: We will tell the Agency to register them manually in an incognito window 
+                        // OR use a secondary Auth app. 
+                        // FOR SIMPLICITY: We create the DB entry. User must register via Index with these creds.
+                        
+                        // We will allow the user to 'claim' this email on signup.
+                        await db.collection('users').doc(email).set({ // Using email as ID for simple claim logic
+                            email: email,
+                            tempPass: pass,
+                            parentAgency: this.user.uid,
+                            createdAt: new Date(),
+                            role: 'user',
+                            uid: 'pending_' + Math.random() // Placeholder until they sign in
+                        });
+                        alert("User Invite Created! Ask user to Register with this email.");
+                        this.loadData();
+                    } catch(e) { console.error(e); }
+                },
+
+                async addToMaster() {
+                    await db.collection('agencies').doc(this.user.uid).collection('master_catalog').add(this.newProd);
+                    this.newProd = {name:'', price:'', image:''};
+                    this.loadData();
+                },
+
+                async upgradePlan() {
+                    if(confirm("Confirm upgrade to $10/month?")) {
+                        await db.collection('agencies').doc(this.user.uid).update({ plan: 'pro_monthly' });
+                        alert("Upgraded to Unlimited!");
+                        window.location.reload();
+                    }
+                },
+                
+                logout() { auth.signOut(); }
+            }
+        }
+    </script>
+</body>
+</html>
