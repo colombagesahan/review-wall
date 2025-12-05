@@ -3,59 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loading Shop...</title>
+    <title>Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
 </head>
-<body class="bg-gray-50" x-data="shopFront()">
+<body class="bg-gray-50 font-sans" x-data="shopFront()">
 
-    <div x-show="loading" class="h-screen flex items-center justify-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
-    </div>
+    <div x-show="loading" class="h-screen flex items-center justify-center">Loading...</div>
 
     <div x-show="!loading && valid">
-        <!-- Dynamic Header -->
-        <header class="text-white shadow-lg" :style="`background-color: ${settings.color}`">
-            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-bold" x-text="settings.name"></h1>
-                <i class="fas fa-shopping-cart text-xl"></i>
+        <!-- Header -->
+        <header class="text-white shadow p-4" :style="`background-color: ${settings.color}`">
+            <div class="container mx-auto flex justify-between">
+                <h1 class="font-bold text-xl" x-text="settings.name"></h1>
+                <button>Cart (0)</button>
             </div>
         </header>
 
         <!-- Hero -->
-        <div class="bg-gray-800 text-white py-16 text-center">
-            <h2 class="text-4xl font-bold" x-text="settings.heroText"></h2>
+        <div class="bg-gray-800 text-white py-20 text-center">
+            <h2 class="text-4xl font-bold" x-text="settings.hero"></h2>
         </div>
 
         <!-- Products -->
-        <div class="container mx-auto px-6 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <template x-for="p in products">
-                    <div class="bg-white rounded shadow hover:shadow-lg transition overflow-hidden">
-                        <img :src="p.image" class="w-full h-48 object-cover">
-                        <div class="p-4">
-                            <h3 class="font-bold text-lg" x-text="p.name"></h3>
-                            <p class="text-blue-600 font-bold mt-1" x-text="'$' + p.price"></p>
-                            <button class="w-full mt-4 bg-gray-900 text-white py-2 rounded hover:bg-gray-700">Add to Cart</button>
-                        </div>
+        <div class="container mx-auto p-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+            <template x-for="p in products">
+                <div class="bg-white rounded shadow overflow-hidden">
+                    <img :src="p.image" class="w-full h-48 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-bold" x-text="p.name"></h3>
+                        <p class="text-lg font-bold text-blue-600">$<span x-text="p.price"></span></p>
+                        <button class="bg-gray-900 text-white w-full py-2 mt-2 rounded">Buy Now</button>
                     </div>
-                </template>
-            </div>
-            
-            <div x-show="products.length === 0" class="text-center text-gray-500 mt-10">
-                <p>No products added yet.</p>
-            </div>
+                </div>
+            </template>
         </div>
-    </div>
-
-    <div x-show="!loading && !valid" class="h-screen flex items-center justify-center flex-col">
-        <h1 class="text-2xl font-bold text-gray-400">Store Not Found</h1>
-        <p class="text-gray-500">Check the URL or ID.</p>
     </div>
 
     <script>
@@ -63,28 +48,24 @@
             return {
                 loading: true,
                 valid: false,
-                settings: { name: '', heroText: '', color: '#333' },
+                settings: {name:'', hero:'', color:'#333'},
                 products: [],
 
                 init() {
-                    const params = new URLSearchParams(window.location.search);
-                    const id = params.get('id');
+                    const id = new URLSearchParams(window.location.search).get('id');
                     if(id) this.loadStore(id);
-                    else this.loading = false;
                 },
 
-                async loadStore(id) {
+                async loadStore(uid) {
                     try {
-                        const doc = await db.collection('agencies').doc(id).get();
+                        const doc = await db.collection('users').doc(uid).get();
                         if(doc.exists) {
                             this.valid = true;
-                            if(doc.data().storeSettings) this.settings = doc.data().storeSettings;
-                            document.title = this.settings.name;
-                            
-                            const snap = await db.collection('agencies').doc(id).collection('products').get();
+                            if(doc.data().settings) this.settings = doc.data().settings;
+                            const snap = await db.collection('users').doc(uid).collection('products').get();
                             this.products = snap.docs.map(d => d.data());
                         }
-                    } catch(e) { console.error(e); }
+                    } catch(e) {}
                     this.loading = false;
                 }
             }
