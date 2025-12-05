@@ -11,178 +11,236 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
 </head>
-<body class="bg-gray-100" x-data="agencyPanel()">
+<body class="bg-gray-50 text-slate-800" x-data="agencyApp()">
 
     <div class="flex h-screen overflow-hidden">
+        
         <!-- Sidebar -->
-        <div class="w-64 bg-slate-900 text-white flex flex-col">
-            <div class="p-6 text-xl font-bold border-b border-slate-800">AgencyFlow</div>
-            <nav class="flex-1 p-4 space-y-2">
-                <a @click="tab = 'users'" :class="tab==='users'?'bg-blue-600':''" class="block p-3 rounded cursor-pointer hover:bg-slate-800"><i class="fas fa-users mr-2"></i> User Management</a>
-                <a @click="tab = 'catalog'" :class="tab==='catalog'?'bg-blue-600':''" class="block p-3 rounded cursor-pointer hover:bg-slate-800"><i class="fas fa-tshirt mr-2"></i> Master Catalog</a>
-                <a @click="tab = 'plan'" :class="tab==='plan'?'bg-blue-600':''" class="block p-3 rounded cursor-pointer hover:bg-slate-800"><i class="fas fa-crown mr-2"></i> Subscription</a>
-            </nav>
-            <button @click="logout" class="p-4 text-gray-400 hover:text-white">Sign Out</button>
-        </div>
-
-        <!-- Content -->
-        <div class="flex-1 overflow-y-auto p-8">
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-10">
+            <div class="p-6 flex items-center gap-3 border-b border-gray-100">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">A</div>
+                <span class="font-bold text-lg tracking-tight">AgencyFlow</span>
+            </div>
             
-            <!-- Tab: Users -->
-            <div x-show="tab === 'users'">
-                <h2 class="text-3xl font-bold mb-4">My Users</h2>
+            <nav class="flex-1 p-4 space-y-1">
+                <p class="px-4 text-xs font-bold text-gray-400 uppercase mb-2">Management</p>
+                <a @click="tab='overview'" :class="tab==='overview' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'" class="flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer font-medium transition">
+                    <i class="fas fa-home w-5"></i> Overview
+                </a>
+                <a @click="tab='users'" :class="tab==='users' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'" class="flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer font-medium transition">
+                    <i class="fas fa-users w-5"></i> Clients (Users)
+                </a>
                 
-                <!-- Limit Checker -->
-                <div class="bg-white p-4 rounded shadow mb-6 flex justify-between items-center">
-                    <div>
-                        <p class="text-gray-500">User Usage</p>
-                        <p class="text-2xl font-bold"><span x-text="myUsers.length"></span> / <span x-text="planMax"></span></p>
+                <p class="px-4 text-xs font-bold text-gray-400 uppercase mt-6 mb-2">Assets</p>
+                <a @click="tab='catalog'" :class="tab==='catalog' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'" class="flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer font-medium transition">
+                    <i class="fas fa-box-open w-5"></i> Master Catalog
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-gray-100">
+                <div class="bg-blue-50 p-4 rounded-xl mb-4">
+                    <div class="flex justify-between text-xs font-bold text-blue-800 mb-1">
+                        <span>Plan Usage</span>
+                        <span x-text="usagePercent + '%'"></span>
                     </div>
-                    <button @click="createUser" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
-                        + Create New User
+                    <div class="w-full bg-blue-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full transition-all duration-500" :style="`width: ${usagePercent}%`"></div>
+                    </div>
+                    <p class="text-xs text-blue-600 mt-2"><span x-text="userCount"></span> / <span x-text="maxUsers"></span> Active Users</p>
+                </div>
+                <button @click="logout" class="flex items-center gap-2 text-gray-500 hover:text-red-500 text-sm font-medium">
+                    <i class="fas fa-sign-out-alt"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-8">
+            
+            <!-- OVERVIEW -->
+            <div x-show="tab === 'overview'" class="animate-fade-in">
+                <h1 class="text-3xl font-bold mb-2">Dashboard Overview</h1>
+                <p class="text-gray-500 mb-8">Welcome back. Here is what's happening today.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-gray-500 font-medium">Total Clients</h3>
+                            <div class="p-2 bg-blue-100 text-blue-600 rounded-lg"><i class="fas fa-users"></i></div>
+                        </div>
+                        <p class="text-3xl font-bold text-slate-800" x-text="userCount">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-gray-500 font-medium">Products in Catalog</h3>
+                            <div class="p-2 bg-green-100 text-green-600 rounded-lg"><i class="fas fa-tshirt"></i></div>
+                        </div>
+                        <p class="text-3xl font-bold text-slate-800" x-text="catalog.length">0</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-gray-500 font-medium">Your Plan</h3>
+                            <div class="p-2 bg-purple-100 text-purple-600 rounded-lg"><i class="fas fa-crown"></i></div>
+                        </div>
+                        <p class="text-xl font-bold text-slate-800 uppercase" x-text="planName">Free</p>
+                        <a href="#" @click="upgrade" class="text-xs text-blue-600 hover:underline">Upgrade to Unlimited</a>
+                    </div>
+                </div>
+
+                <!-- Invite Section -->
+                <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-8 text-white shadow-lg">
+                    <h2 class="text-2xl font-bold mb-2">Grow Your Agency</h2>
+                    <p class="text-slate-300 mb-6 max-w-xl">Send this unique link to your clients. When they register, they will automatically be assigned to your agency.</p>
+                    
+                    <div class="flex gap-2 max-w-lg">
+                        <input type="text" readonly :value="inviteLink" class="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-sm text-white focus:outline-none">
+                        <button @click="copyLink" class="bg-blue-600 hover:bg-blue-500 px-6 py-3 rounded-lg font-bold transition">Copy Link</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- USERS TAB -->
+            <div x-show="tab === 'users'">
+                <h2 class="text-2xl font-bold mb-6">Client Management</h2>
+                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                            <tr>
+                                <th class="p-4">Client Email</th>
+                                <th class="p-4">Store Status</th>
+                                <th class="p-4">Joined Date</th>
+                                <th class="p-4 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <template x-for="u in users">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="p-4 font-bold text-gray-700" x-text="u.email"></td>
+                                    <td class="p-4"><span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Active</span></td>
+                                    <td class="p-4 text-sm text-gray-500" x-text="new Date(u.createdAt?.seconds * 1000).toLocaleDateString()"></td>
+                                    <td class="p-4 text-right">
+                                        <a :href="'shop.html?id=' + u.uid" target="_blank" class="text-blue-600 text-sm font-medium hover:underline">Visit Store</a>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                    <div x-show="users.length === 0" class="p-8 text-center text-gray-500">
+                        No clients yet. Share your Invite Link!
+                    </div>
+                </div>
+            </div>
+
+            <!-- CATALOG TAB -->
+            <div x-show="tab === 'catalog'">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold">Master Catalog</h2>
+                        <p class="text-gray-500">Products you add here are available for your clients to import.</p>
+                    </div>
+                </div>
+
+                <!-- Add Form -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+                    <h3 class="font-bold text-gray-700 mb-4">Add New Product (Mock Printful)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <input x-model="newProd.name" placeholder="Product Name (e.g. Unisex Tee)" class="border border-gray-300 rounded-lg p-3 text-sm">
+                        <input x-model="newProd.price" type="number" placeholder="Base Price ($)" class="border border-gray-300 rounded-lg p-3 text-sm">
+                        <input x-model="newProd.image" placeholder="Image URL" class="md:col-span-2 border border-gray-300 rounded-lg p-3 text-sm">
+                    </div>
+                    <button @click="addProduct" class="mt-4 bg-slate-800 text-white px-6 py-2 rounded-lg font-bold hover:bg-slate-700 transition">
+                        + Add to Library
                     </button>
                 </div>
 
-                <table class="min-w-full bg-white rounded shadow">
-                    <thead class="bg-gray-50"><tr><th class="p-4 text-left">Email</th><th class="p-4 text-left">Password (Initial)</th><th class="p-4 text-left">Store Link</th></tr></thead>
-                    <tbody>
-                        <template x-for="u in myUsers">
-                            <tr class="border-t">
-                                <td class="p-4" x-text="u.email"></td>
-                                <td class="p-4 text-gray-500" x-text="u.tempPass"></td>
-                                <td class="p-4"><a :href="'shop.html?id='+u.uid" target="_blank" class="text-blue-500 underline">View Shop</a></td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Tab: Catalog -->
-            <div x-show="tab === 'catalog'">
-                <h2 class="text-3xl font-bold mb-4">Master Catalog (Printful)</h2>
-                <p class="mb-4 text-gray-600">Add products here. Your users will be able to import these to their stores.</p>
-                
-                <div class="bg-white p-6 rounded shadow mb-6">
-                    <div class="grid grid-cols-3 gap-4">
-                        <input x-model="newProd.name" placeholder="Product Name" class="border p-2 rounded">
-                        <input x-model="newProd.price" type="number" placeholder="Base Price" class="border p-2 rounded">
-                        <input x-model="newProd.image" placeholder="Image URL" class="border p-2 rounded">
-                    </div>
-                    <button @click="addToMaster" class="mt-4 bg-green-600 text-white px-4 py-2 rounded">Add to Agency Library</button>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <template x-for="p in masterProducts">
-                        <div class="bg-white p-4 rounded shadow">
-                            <img :src="p.image" class="w-full h-32 object-cover mb-2 bg-gray-200">
-                            <h4 class="font-bold" x-text="p.name"></h4>
-                            <p class="text-xs text-gray-500">Base Cost: $<span x-text="p.price"></span></p>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <template x-for="p in catalog">
+                        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition">
+                            <div class="h-40 bg-gray-100 overflow-hidden">
+                                <img :src="p.image" class="w-full h-full object-cover">
+                            </div>
+                            <div class="p-4">
+                                <h4 class="font-bold text-gray-800" x-text="p.name"></h4>
+                                <p class="text-sm text-gray-500">Base Cost: <span class="text-slate-900 font-bold" x-text="'$'+p.price"></span></p>
+                                <button @click="removeProduct(p.id)" class="text-red-500 text-xs font-bold mt-2 hover:underline">Remove</button>
+                            </div>
                         </div>
                     </template>
                 </div>
             </div>
 
-            <!-- Tab: Plan -->
-            <div x-show="tab === 'plan'">
-                <h2 class="text-3xl font-bold mb-4">Subscription Plan</h2>
-                <div class="bg-white p-8 rounded shadow max-w-xl">
-                    <h3 class="text-xl font-bold">Current Plan: <span x-text="planName" class="text-blue-600 uppercase"></span></h3>
-                    <p class="mt-2 text-gray-600">You can have up to <span x-text="planMax"></span> users.</p>
-                    
-                    <div x-show="planName === 'lifetime_10usd'" class="mt-6 border-t pt-6">
-                        <p class="font-bold mb-2">Need Unlimited Users?</p>
-                        <button @click="upgradePlan" class="bg-purple-600 text-white px-6 py-3 rounded font-bold hover:bg-purple-700 w-full">
-                            Upgrade to Pro ($10/month)
-                        </button>
-                        <p class="text-xs text-gray-400 mt-2 text-center">Unlocks unlimited user creation.</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+        </main>
     </div>
 
     <script>
-        function agencyPanel() {
+        function agencyApp() {
             return {
-                tab: 'users',
-                user: null,
-                myUsers: [],
-                masterProducts: [],
-                planName: 'loading...',
-                planMax: 100,
-                newProd: {name:'', price:'', image:''},
+                tab: 'overview',
+                uid: null,
+                users: [],
+                catalog: [],
+                planName: 'Standard',
+                maxUsers: 100,
+                userCount: 0,
+                inviteLink: '',
+                newProd: { name: '', price: '', image: '' },
+
+                get usagePercent() {
+                    return Math.min(100, Math.round((this.userCount / this.maxUsers) * 100));
+                },
 
                 init() {
-                    auth.onAuthStateChanged(u => {
-                        if(u) { this.user = u; this.loadData(); }
-                        else window.location.href = 'index.html';
+                    auth.onAuthStateChanged(user => {
+                        if(user) {
+                            this.uid = user.uid;
+                            this.inviteLink = window.location.origin + '/index.html?ref=' + this.uid;
+                            this.loadData();
+                        } else {
+                            window.location.href = 'index.html';
+                        }
                     });
                 },
 
                 async loadData() {
-                    // 1. Get Agency Plan
-                    const doc = await db.collection('agencies').doc(this.user.uid).get();
+                    // Agency Details
+                    const doc = await db.collection('agencies').doc(this.uid).get();
                     const data = doc.data();
-                    this.planName = data.plan;
-                    this.planMax = (data.plan === 'pro_monthly') ? 999999 : 100;
+                    this.planName = data.plan === 'pro_monthly' ? 'Unlimited Pro' : 'Lifetime Basic';
+                    this.maxUsers = data.maxUsers || 100;
 
-                    // 2. Get Users
-                    const usersSnap = await db.collection('users').where('parentAgency', '==', this.user.uid).get();
-                    this.myUsers = usersSnap.docs.map(d => d.data());
+                    // Clients
+                    const uSnap = await db.collection('users').where('parentAgency', '==', this.uid).get();
+                    this.users = uSnap.docs.map(d => d.data());
+                    this.userCount = this.users.length;
 
-                    // 3. Get Master Products
-                    const prodSnap = await db.collection('agencies').doc(this.user.uid).collection('master_catalog').get();
-                    this.masterProducts = prodSnap.docs.map(d => d.data());
+                    // Catalog
+                    const cSnap = await db.collection('agencies').doc(this.uid).collection('master_catalog').get();
+                    this.catalog = cSnap.docs.map(d => ({id: d.id, ...d.data()}));
                 },
 
-                async createUser() {
-                    // Check Limit
-                    if (this.myUsers.length >= this.planMax) {
-                        alert("Upgrade Required! You reached your plan limit.");
-                        this.tab = 'plan';
-                        return;
-                    }
-
-                    const email = prompt("Enter User Email:");
-                    const pass = prompt("Create User Password:");
-                    if(!email || !pass) return;
-
-                    try {
-                        // In a real app, use a Firebase Function to create secondary users.
-                        // Here we simulate it by creating a document, but Auth needs distinct sessions.
-                        // TRICK: We will tell the Agency to register them manually in an incognito window 
-                        // OR use a secondary Auth app. 
-                        // FOR SIMPLICITY: We create the DB entry. User must register via Index with these creds.
-                        
-                        // We will allow the user to 'claim' this email on signup.
-                        await db.collection('users').doc(email).set({ // Using email as ID for simple claim logic
-                            email: email,
-                            tempPass: pass,
-                            parentAgency: this.user.uid,
-                            createdAt: new Date(),
-                            role: 'user',
-                            uid: 'pending_' + Math.random() // Placeholder until they sign in
-                        });
-                        alert("User Invite Created! Ask user to Register with this email.");
-                        this.loadData();
-                    } catch(e) { console.error(e); }
-                },
-
-                async addToMaster() {
-                    await db.collection('agencies').doc(this.user.uid).collection('master_catalog').add(this.newProd);
+                async addProduct() {
+                    if(!this.newProd.name) return;
+                    await db.collection('agencies').doc(this.uid).collection('master_catalog').add(this.newProd);
                     this.newProd = {name:'', price:'', image:''};
                     this.loadData();
                 },
 
-                async upgradePlan() {
-                    if(confirm("Confirm upgrade to $10/month?")) {
-                        await db.collection('agencies').doc(this.user.uid).update({ plan: 'pro_monthly' });
-                        alert("Upgraded to Unlimited!");
-                        window.location.reload();
+                async removeProduct(id) {
+                    if(confirm("Remove this product?")) {
+                        await db.collection('agencies').doc(this.uid).collection('master_catalog').doc(id).delete();
+                        this.loadData();
                     }
                 },
-                
+
+                copyLink() {
+                    navigator.clipboard.writeText(this.inviteLink);
+                    alert("Link copied! Send this to your clients.");
+                },
+
+                upgrade() {
+                    alert("Contact Super Admin to upgrade to Unlimited Plan.");
+                },
+
                 logout() { auth.signOut(); }
             }
         }
