@@ -3,35 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReviewWall - Collect Testimonials</title>
-    <link rel="stylesheet" href="style.css">
+    <title>AgencyFlow - Dropshipping Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
 </head>
-<body>
-    <nav class="nav">
-        <h2 style="font-weight:800; font-size:1.5rem;">ReviewWall.</h2>
-        <a href="app.html" style="color:#2563eb; text-decoration:none; font-weight:600;">Login</a>
+<body class="bg-white text-gray-800 font-sans" x-data="landingParams()">
+
+    <!-- Navbar -->
+    <nav class="container mx-auto p-6 flex justify-between items-center">
+        <div class="text-2xl font-bold text-blue-600">AgencyFlow</div>
+        <div class="space-x-4">
+            <button @click="openLogin = true" class="text-gray-600 hover:text-blue-600 font-bold">Login</button>
+            <button @click="openLogin = true" class="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition">Get Started</button>
+        </div>
     </nav>
 
-    <div class="hero">
-        <h1 style="font-size:3.5rem; margin-bottom:20px; line-height:1.2;">Turn Happy Customers<br>Into More Sales</h1>
-        <p style="color:#64748b; font-size:1.25rem; max-width:600px; margin:0 auto 40px;">The easiest way to collect video & text testimonials. Create your Wall of Love in 2 minutes.</p>
-        <a href="app.html" class="btn btn-primary" style="display:inline-block; width:auto; text-decoration:none;">Get Started for Free</a>
-        <br><br>
-        <small style="color:#94a3b8;">Lifetime Deal Available on AppSumo</small>
-    </div>
+    <!-- Hero Section -->
+    <header class="container mx-auto px-6 py-20 text-center">
+        <h1 class="text-5xl font-extrabold mb-6 leading-tight">Launch Your Own <br><span class="text-blue-600">Dropshipping Empire</span></h1>
+        <p class="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">The white-label website builder for agencies. You get the clients, we handle the tech. Lifetime access available now.</p>
+        <div class="flex justify-center gap-4">
+            <a href="https://appsumo.com" target="_blank" class="bg-yellow-400 text-yellow-900 font-bold px-8 py-4 rounded shadow hover:bg-yellow-300">
+                Buy on AppSumo ($10)
+            </a>
+            <button @click="openLogin = true" class="border border-gray-300 text-gray-600 font-bold px-8 py-4 rounded hover:bg-gray-50">
+                Agency Login
+            </button>
+        </div>
+    </header>
 
-    <div style="padding:60px 20px; text-align:center; background:#f8fafc;">
-        <h3 style="margin-bottom:40px;">Trusted by Agencies & Freelancers</h3>
-        <div class="masonry">
-            <!-- Mock Reviews for Social Proof -->
-            <div class="review-card"><p>"ReviewWall helped me close 3 clients this week!"</p><strong>- Sarah J.</strong></div>
-            <div class="review-card"><p>"Simple, clean, and cheap. Love it."</p><strong>- Mike D.</strong></div>
-            <div class="review-card"><p>"Better than tools that cost $20/month."</p><strong>- AgencyX</strong></div>
+    <!-- Login Modal -->
+    <div x-show="openLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full relative">
+            <button @click="openLogin = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+            
+            <h2 class="text-2xl font-bold mb-6 text-center">Agency Portal</h2>
+            
+            <!-- Error Message -->
+            <div x-show="error" class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm" x-text="error"></div>
+
+            <div class="space-y-4">
+                <input type="email" x-model="email" placeholder="Email Address" class="w-full border p-3 rounded">
+                <input type="password" x-model="password" placeholder="Password" class="w-full border p-3 rounded">
+                
+                <button @click="handleLogin" class="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700">
+                    <span x-show="!loading">Login</span>
+                    <span x-show="loading">Checking...</span>
+                </button>
+                
+                <div class="text-center text-sm text-gray-500 mt-4">
+                    Don't have an account? <a href="#" @click.prevent="handleSignup" class="text-blue-600 font-bold">Register (Redeem Code)</a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div style="padding:40px; text-align:center; border-top:1px solid #e2e8f0; font-size:0.9rem; color:#666;">
-        &copy; 2024 ReviewWall. <a href="privacy.html">Privacy</a> | <a href="terms.html">Terms</a>
-    </div>
+    <script>
+        function landingParams() {
+            return {
+                openLogin: false,
+                email: '',
+                password: '',
+                error: '',
+                loading: false,
+
+                async handleLogin() {
+                    this.loading = true;
+                    this.error = '';
+                    try {
+                        await auth.signInWithEmailAndPassword(this.email, this.password);
+                        window.location.href = 'admin.html'; // Redirect to Dashboard
+                    } catch (e) {
+                        this.error = e.message;
+                    }
+                    this.loading = false;
+                },
+
+                async handleSignup() {
+                    this.loading = true;
+                    this.error = '';
+                    try {
+                        // Create User
+                        const cred = await auth.createUserWithEmailAndPassword(this.email, this.password);
+                        
+                        // Set Defaults for new AppSumo User
+                        await db.collection('agencies').doc(cred.user.uid).set({
+                            plan: 'lifetime_pending', 
+                            createdAt: new Date(),
+                            storeSettings: {
+                                name: 'My New Agency',
+                                color: '#2563EB',
+                                heroText: 'Welcome to our Shop'
+                            }
+                        });
+                        
+                        window.location.href = 'admin.html';
+                    } catch (e) {
+                        this.error = e.message;
+                    }
+                    this.loading = false;
+                }
+            }
+        }
+    </script>
 </body>
 </html>
