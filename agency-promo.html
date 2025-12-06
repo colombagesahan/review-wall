@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Join Our Agency</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body class="bg-white text-gray-800" x-data="promoPage()">
+
+    <div x-show="loading" class="h-screen flex items-center justify-center">Loading...</div>
+
+    <div x-show="!loading && valid">
+        <!-- Agency Hero -->
+        <header class="bg-gray-900 text-white py-24 text-center px-4">
+            <h1 class="text-5xl font-bold mb-4" x-text="data.agencyName"></h1>
+            <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
+                Join our exclusive dropshipping network. We provide the products, you make the sales.
+            </p>
+            <button @click="joinNow" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-full shadow-lg transition transform hover:scale-105">
+                Start Selling Today
+            </button>
+        </header>
+
+        <section class="container mx-auto py-16 px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div class="p-6 border rounded-xl shadow-sm">
+                <i class="fas fa-box text-4xl text-blue-500 mb-4"></i>
+                <h3 class="font-bold text-xl mb-2">Premium Products</h3>
+                <p class="text-gray-500">Access our curated catalog of high-converting items.</p>
+            </div>
+            <div class="p-6 border rounded-xl shadow-sm">
+                <i class="fas fa-laptop-code text-4xl text-purple-500 mb-4"></i>
+                <h3 class="font-bold text-xl mb-2">Instant Store</h3>
+                <p class="text-gray-500">Get your own ecommerce website generated instantly.</p>
+            </div>
+            <div class="p-6 border rounded-xl shadow-sm">
+                <i class="fas fa-money-bill-wave text-4xl text-green-500 mb-4"></i>
+                <h3 class="font-bold text-xl mb-2">Fast Payouts</h3>
+                <p class="text-gray-500">We handle the payments and pay you within 3 days.</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function promoPage() {
+            return {
+                loading: true,
+                valid: false,
+                aid: null,
+                data: {},
+
+                async init() {
+                    const params = new URLSearchParams(window.location.search);
+                    this.aid = params.get('id');
+                    if(this.aid) {
+                        const doc = await db.collection('agencies').doc(this.aid).get();
+                        if(doc.exists) {
+                            this.data = doc.data();
+                            this.valid = true;
+                            document.title = "Join " + this.data.agencyName;
+                        }
+                    }
+                    this.loading = false;
+                },
+
+                joinNow() {
+                    // Redirects to index with the REF code so they sign up under this agency
+                    // FIX: Uses relative path to ensure it works on GitHub
+                    const baseUrl = window.location.href.split('/').slice(0,-1).join('/');
+                    window.location.href = `${baseUrl}/index.html?ref=${this.aid}`;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
