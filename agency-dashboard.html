@@ -12,6 +12,18 @@
 </head>
 <body class="bg-gray-100 font-sans" x-data="agencyApp()">
 
+    <!-- SYSTEM ALERTS (Messages from Admin) -->
+    <template x-for="alert in systemAlerts">
+        <div class="px-4 py-3 text-white text-center font-bold text-sm"
+             :class="{
+                'bg-blue-600': alert.type === 'info',
+                'bg-yellow-500 text-black': alert.type === 'warning',
+                'bg-red-600': alert.type === 'urgent'
+             }">
+            <span x-text="alert.message"></span>
+        </div>
+    </template>
+
     <div class="flex h-screen overflow-hidden">
         <div class="w-64 bg-slate-900 text-white flex flex-col p-4">
             <h1 class="text-2xl font-bold mb-8">Agency Admin</h1>
@@ -25,10 +37,10 @@
 
         <div class="flex-1 overflow-y-auto p-8">
             
-            <!-- SUPER ADMIN WARNING -->
+            <!-- SUPER ADMIN WARNING (Specific to this user) -->
             <div x-show="warningStatus" class="bg-red-600 text-white p-6 rounded-xl shadow-lg mb-8 animate-pulse">
-                <h2 class="text-2xl font-bold"><i class="fas fa-exclamation-triangle"></i> URGENT: PAYMENT WARNING</h2>
-                <p class="mt-2">Super Admin has flagged your account for missing Client Payouts. Please clear all dues immediately or your account will be banned and clients reassigned.</p>
+                <h2 class="text-2xl font-bold">URGENT: PAYMENT WARNING</h2>
+                <p class="mt-2">Super Admin has flagged your account for missing Client Payouts. Please clear all dues immediately.</p>
             </div>
 
             <div x-show="tab==='overview'">
@@ -37,7 +49,6 @@
                 <!-- Promo Link Card -->
                 <div class="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-600">
                     <h3 class="font-bold text-lg mb-2">Your Promotional Website</h3>
-                    <p class="text-gray-500 mb-4">Send this link to recruit new clients:</p>
                     <div class="flex gap-2">
                         <input readonly :value="promoLink" class="w-full bg-gray-100 border p-2 rounded text-sm">
                         <a :href="promoLink" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded font-bold">Open</a>
@@ -66,13 +77,12 @@
             </div>
 
             <div x-show="tab==='settings'">
-                <h2 class="text-3xl font-bold mb-6">Payment Settings</h2>
+                <h2 class="text-3xl font-bold mb-6">Settings</h2>
                 <div class="bg-white p-6 rounded shadow max-w-lg">
-                    <label class="block font-bold mb-2">Your PayPal/Payment URL</label>
-                    <p class="text-sm text-gray-500 mb-2">This link will be used on ALL your client stores.</p>
-                    <input x-model="agencyData.paymentLink" placeholder="https://paypal.me/youragency" class="w-full border p-3 rounded mb-4">
-                    <label class="block font-bold mb-2">Agency Name</label>
+                    <label class="block font-bold mb-2">Agency Name (For White Label)</label>
                     <input x-model="agencyData.agencyName" class="w-full border p-3 rounded mb-4">
+                    <label class="block font-bold mb-2">Payment Link</label>
+                    <input x-model="agencyData.paymentLink" class="w-full border p-3 rounded mb-4">
                     <button @click="saveSettings" class="bg-slate-900 text-white px-6 py-2 rounded font-bold">Save Settings</button>
                 </div>
             </div>
@@ -89,15 +99,16 @@
                 clients: [],
                 agencyData: { paymentLink: '', agencyName: '' },
                 warningStatus: false,
+                systemAlerts: [],
 
                 init() {
                     auth.onAuthStateChanged(user => {
                         if(user) {
                             this.uid = user.uid;
-                            // FIXED: Generates correct GitHub Pages link
                             const baseUrl = window.location.href.split('/').slice(0,-1).join('/');
                             this.promoLink = `${baseUrl}/agency-promo.html?id=${this.uid}`;
                             this.loadData();
+                            this.loadAlerts();
                         } else window.location.href='index.html';
                     });
                 },
@@ -112,13 +123,24 @@
                     this.clients = snap.docs.map(d => ({id: d.id, ...d.data()}));
                 },
 
+                // LOAD ALERTS FROM ADMIN
+                async loadAlerts() {
+                    const snap = await db.collection('alerts').get();
+                    // Filter in JS to avoid complex index requirements for now
+                    this.systemAlerts = snap.docs
+                        .map(d => d.data())
+                        .filter(a => a.target === 'all' || a.target === 'agencies')
+                        .sort((a,b) => b.createdAt - a.createdAt) // Newest first
+                        .slice(0, 1); // Only show the latest 1
+                },
+
                 async saveSettings() {
                     await db.collection('agencies').doc(this.uid).update(this.agencyData);
                     alert("Settings Saved!");
                 },
 
                 async markPaid(client) {
-                    if(confirm("Confirm you have paid $" + client.unpaidEarnings + " to this client?")) {
+                    if(confirm("Mark paid?")) {
                         await db.collection('users').doc(client.id).update({ unpaidEarnings: 0 });
                         this.loadData();
                     }
