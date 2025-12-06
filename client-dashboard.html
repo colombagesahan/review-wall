@@ -12,6 +12,18 @@
 </head>
 <body class="bg-gray-50 font-sans" x-data="clientApp()">
 
+    <!-- SYSTEM ALERTS (Messages from Admin) -->
+    <template x-for="alert in systemAlerts">
+        <div class="px-4 py-3 text-white text-center font-bold text-sm"
+             :class="{
+                'bg-blue-600': alert.type === 'info',
+                'bg-yellow-500 text-black': alert.type === 'warning',
+                'bg-red-600': alert.type === 'urgent'
+             }">
+            <span x-text="alert.message"></span>
+        </div>
+    </template>
+
     <nav class="bg-white shadow p-4 flex justify-between items-center">
         <h1 class="font-bold text-xl">Store Manager</h1>
         <button @click="auth.signOut()" class="text-gray-500">Logout</button>
@@ -27,13 +39,12 @@
                 <p class="text-xs text-gray-400 mt-2">Scheduled for payout soon.</p>
             </div>
             
-            <!-- FIXED: FRIENDLY REMINDER BUTTON -->
             <div class="bg-white p-6 rounded shadow border-l-4 border-blue-500">
                 <p class="text-gray-500 font-bold">Payment Status</p>
                 <p class="text-sm text-gray-600 mb-4">Earnings usually arrive within 3 days. Need an update?</p>
                 
                 <button @click="sendReminder" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 w-full flex justify-center items-center gap-2">
-                    <i class="fas fa-bell"></i> Send Payment Reminder
+                    Send Payment Reminder
                 </button>
             </div>
         </div>
@@ -58,17 +69,31 @@
                 uid: null,
                 userData: {},
                 newProd: {name:'', price:''},
+                systemAlerts: [],
 
                 init() {
                     auth.onAuthStateChanged(user => {
-                        if(user) { this.uid = user.uid; this.loadData(); } 
-                        else window.location.href = 'index.html';
+                        if(user) { 
+                            this.uid = user.uid; 
+                            this.loadData();
+                            this.loadAlerts();
+                        } else window.location.href = 'index.html';
                     });
                 },
 
                 async loadData() {
                     const doc = await db.collection('users').doc(this.uid).get();
                     if(doc.exists) this.userData = doc.data();
+                },
+
+                // LOAD ALERTS
+                async loadAlerts() {
+                    const snap = await db.collection('alerts').get();
+                    this.systemAlerts = snap.docs
+                        .map(d => d.data())
+                        .filter(a => a.target === 'all' || a.target === 'clients')
+                        .sort((a,b) => b.createdAt - a.createdAt)
+                        .slice(0, 1);
                 },
 
                 async addProduct() {
@@ -83,8 +108,7 @@
                 },
 
                 async sendReminder() {
-                    // Logic is the same (Alerts Admin), but User thinks it's just a reminder
-                    if(confirm("Send a reminder to the accounts team regarding your pending payout?")) {
+                    if(confirm("Send a reminder?")) {
                         await db.collection('disputes').add({
                             clientId: this.uid,
                             clientEmail: this.userData.email,
@@ -92,9 +116,9 @@
                             amount: this.userData.unpaidEarnings,
                             status: 'open',
                             date: new Date(),
-                            type: 'reminder' // You can filter this in Admin
+                            type: 'reminder'
                         });
-                        alert("Reminder sent successfully. Please allow 24 hours for an update.");
+                        alert("Reminder sent successfully.");
                     }
                 }
             }
