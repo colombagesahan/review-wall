@@ -10,14 +10,13 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
 
-    <!-- FIX: This prevents the "Flash" of red box -->
     <style>
         [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans" x-data="agencyApp()">
 
-    <!-- SYSTEM ALERTS (Messages from Admin) -->
+    <!-- SYSTEM ALERTS (Broadcasts) -->
     <template x-for="alert in systemAlerts">
         <div class="px-4 py-3 text-white text-center font-bold text-sm"
              :class="{
@@ -32,6 +31,10 @@
     <div class="flex h-screen overflow-hidden">
         <div class="w-64 bg-slate-900 text-white flex flex-col p-4">
             <h1 class="text-2xl font-bold mb-8">Agency Admin</h1>
+            
+            <!-- DEBUG: Show ID to confirm matches Admin -->
+            <p class="text-xs text-gray-500 mb-4 break-all">ID: <span x-text="uid"></span></p>
+
             <nav class="space-y-2">
                 <a @click="tab='overview'" class="block p-3 rounded hover:bg-slate-800 cursor-pointer">Overview</a>
                 <a @click="tab='clients'" class="block p-3 rounded hover:bg-slate-800 cursor-pointer">Clients & Payouts</a>
@@ -42,17 +45,21 @@
 
         <div class="flex-1 overflow-y-auto p-8">
             
-            <!-- SUPER ADMIN WARNING -->
-            <!-- FIX: Added 'x-cloak' to hide this until data is loaded -->
-            <div x-show="warningStatus" x-cloak class="bg-red-600 text-white p-6 rounded-xl shadow-lg mb-8 animate-pulse">
-                <h2 class="text-2xl font-bold">URGENT: PAYMENT WARNING</h2>
-                <p class="mt-2">Super Admin has flagged your account for missing Client Payouts. Please clear all dues immediately.</p>
+            <!-- SUPER ADMIN WARNING (Real-time) -->
+            <div x-show="warningStatus" x-cloak class="bg-red-600 text-white p-6 rounded-xl shadow-lg mb-8 animate-pulse border-4 border-red-800">
+                <div class="flex items-center gap-4">
+                    <i class="fas fa-exclamation-triangle text-4xl"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold">URGENT: PAYMENT WARNING</h2>
+                        <p class="mt-1 font-bold">The Super Admin has flagged your account for missing Client Payouts.</p>
+                        <p class="text-sm opacity-90">Please pay your clients immediately to remove this warning and avoid a ban.</p>
+                    </div>
+                </div>
             </div>
 
             <div x-show="tab==='overview'">
                 <h2 class="text-3xl font-bold mb-6">Dashboard</h2>
                 
-                <!-- Promo Link Card -->
                 <div class="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-600">
                     <h3 class="font-bold text-lg mb-2">Your Promotional Website</h3>
                     <div class="flex gap-2">
@@ -85,7 +92,7 @@
             <div x-show="tab==='settings'">
                 <h2 class="text-3xl font-bold mb-6">Settings</h2>
                 <div class="bg-white p-6 rounded shadow max-w-lg">
-                    <label class="block font-bold mb-2">Agency Name (For White Label)</label>
+                    <label class="block font-bold mb-2">Agency Name</label>
                     <input x-model="agencyData.agencyName" class="w-full border p-3 rounded mb-4">
                     <label class="block font-bold mb-2">Payment Link</label>
                     <input x-model="agencyData.paymentLink" class="w-full border p-3 rounded mb-4">
@@ -104,7 +111,7 @@
                 promoLink: '',
                 clients: [],
                 agencyData: { paymentLink: '', agencyName: '' },
-                warningStatus: false,
+                warningStatus: false, // Default false
                 systemAlerts: [],
 
                 init() {
@@ -113,24 +120,36 @@
                             this.uid = user.uid;
                             const baseUrl = window.location.href.split('/').slice(0,-1).join('/');
                             this.promoLink = `${baseUrl}/agency-promo.html?id=${this.uid}`;
-                            this.loadData();
+                            
+                            // Load Data
+                            this.listenToAgencyData(); // NEW: Real-time listener
+                            this.loadClients();
                             this.loadAlerts();
                         } else window.location.href='index.html';
                     });
                 },
 
-                async loadData() {
-                    const doc = await db.collection('agencies').doc(this.uid).get();
-                    if(doc.exists) {
-                        this.agencyData = doc.data();
-                        this.warningStatus = doc.data().warningStatus || false;
-                    }
+                // === REAL-TIME LISTENER FOR WARNINGS ===
+                listenToAgencyData() {
+                    const db = firebase.firestore();
+                    // .onSnapshot() listens for changes instantly
+                    db.collection('agencies').doc(this.uid).onSnapshot(doc => {
+                        if(doc.exists) {
+                            this.agencyData = doc.data();
+                            // Update warning status immediately when Admin changes it
+                            this.warningStatus = doc.data().warningStatus === true; 
+                        }
+                    });
+                },
+
+                async loadClients() {
+                    const db = firebase.firestore();
                     const snap = await db.collection('users').where('parentAgency', '==', this.uid).get();
                     this.clients = snap.docs.map(d => ({id: d.id, ...d.data()}));
                 },
 
-                // LOAD ALERTS FROM ADMIN
                 async loadAlerts() {
+                    const db = firebase.firestore();
                     const snap = await db.collection('alerts').get();
                     this.systemAlerts = snap.docs
                         .map(d => d.data())
@@ -140,14 +159,17 @@
                 },
 
                 async saveSettings() {
+                    const db = firebase.firestore();
                     await db.collection('agencies').doc(this.uid).update(this.agencyData);
                     alert("Settings Saved!");
                 },
 
                 async markPaid(client) {
+                    const db = firebase.firestore();
                     if(confirm("Mark paid?")) {
                         await db.collection('users').doc(client.id).update({ unpaidEarnings: 0 });
-                        this.loadData();
+                        // Reload clients to show $0
+                        this.loadClients();
                     }
                 }
             }
