@@ -1,4 +1,3 @@
-// firebase-config.js
 const firebaseConfig = {
   apiKey: "AIzaSyBUjzMFao9BS3uXBOW3qYrLVqHaGn8qIk4", // Your Real Key
   authDomain: "onlineshop-30cd1.firebaseapp.com",
@@ -8,12 +7,10 @@ const firebaseConfig = {
   appId: "1:818252574868:web:8dd36825db589a886cc481"
 };
 
-// Initialize Firebase
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-// Attach to window so all pages can see them
 window.auth = firebase.auth();
 window.db = firebase.firestore();
 
