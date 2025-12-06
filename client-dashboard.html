@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Client Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+</head>
+<body class="bg-gray-50 font-sans" x-data="clientApp()">
+
+    <nav class="bg-white shadow p-4 flex justify-between items-center">
+        <h1 class="font-bold text-xl">Store Manager</h1>
+        <button @click="auth.signOut()" class="text-gray-500">Logout</button>
+    </nav>
+
+    <div class="max-w-4xl mx-auto p-8">
+        
+        <!-- Financials -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-6 rounded shadow border-l-4 border-green-500">
+                <p class="text-gray-500">Unpaid Earnings (Held by Agency)</p>
+                <p class="text-3xl font-bold text-gray-800" x-text="'$' + (userData.unpaidEarnings || 0)"></p>
+                <p class="text-xs text-gray-400 mt-2">Agency must pay within 3 days of order.</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded shadow border-l-4 border-red-500">
+                <p class="text-gray-500 font-bold">Payment Issue?</p>
+                <p class="text-sm text-gray-600 mb-4">If your agency has not paid you on time, report them to Super Admin.</p>
+                <button @click="reportAgency" class="bg-red-600 text-white px-4 py-2 rounded font-bold hover:bg-red-700 w-full">
+                    I DID NOT RECEIVE MY EARNINGS
+                </button>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-bold mb-4">My Store</h2>
+        <a :href="'shop.html?id='+uid" target="_blank" class="text-blue-600 underline mb-6 block">View Public Store</a>
+
+        <!-- Simple Product Manager (Condensed for brevity) -->
+        <div class="bg-white p-6 rounded shadow">
+            <h3 class="font-bold mb-4">Add Product</h3>
+            <div class="flex gap-2">
+                <input x-model="newProd.name" placeholder="Name" class="border p-2 rounded w-full">
+                <input x-model="newProd.price" placeholder="Price" class="border p-2 rounded w-24">
+                <button @click="addProduct" class="bg-blue-600 text-white px-4 rounded">Add</button>
+            </div>
+            <!-- List of products would go here -->
+        </div>
+
+    </div>
+
+    <script>
+        function clientApp() {
+            return {
+                uid: null,
+                userData: {},
+                newProd: {name:'', price:''},
+
+                init() {
+                    auth.onAuthStateChanged(user => {
+                        if(user) { this.uid = user.uid; this.loadData(); } 
+                        else window.location.href = 'index.html';
+                    });
+                },
+
+                async loadData() {
+                    const doc = await db.collection('users').doc(this.uid).get();
+                    if(doc.exists) this.userData = doc.data();
+                },
+
+                async addProduct() {
+                    // Logic to add product... (Simplified)
+                    alert("Product Added (Demo)");
+                },
+
+                async reportAgency() {
+                    if(confirm("Are you sure? This will alert the Super Admin to investigate your Agency.")) {
+                        await db.collection('disputes').add({
+                            clientId: this.uid,
+                            clientEmail: this.userData.email,
+                            agencyId: this.userData.parentAgency,
+                            amount: this.userData.unpaidEarnings,
+                            status: 'open',
+                            date: new Date()
+                        });
+                        alert("Report Sent! Super Admin will investigate.");
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
