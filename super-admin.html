@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Super Admin Control</title>
+    <title>Super Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
@@ -12,135 +12,152 @@
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans" x-data="adminPanel()">
 
-    <div class="container mx-auto p-6 max-w-6xl">
-        <div class="flex justify-between items-center mb-10 border-b border-gray-700 pb-4">
+    <div class="container mx-auto p-6 max-w-7xl">
+        <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
             <h1 class="text-3xl font-bold text-red-500"><i class="fas fa-shield-alt"></i> God Mode</h1>
-            <button @click="auth.signOut()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded">Logout</button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            <!-- SECTION 1: MESSAGING CENTER -->
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                <h2 class="text-xl font-bold mb-4 text-blue-400">📢 Message Center</h2>
-                
-                <div class="space-y-4">
-                    <textarea x-model="alertMsg" placeholder="Type message..." class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white h-24"></textarea>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs text-gray-400">Who is this for?</label>
-                            <select x-model="alertTarget" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
-                                <option value="all">Global (Everyone)</option>
-                                <option value="agencies">All Agencies</option>
-                                <option value="clients">All Clients</option>
-                                <option value="specific">Specific ID</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-xs text-gray-400">Color / Urgency</label>
-                            <select x-model="alertType" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
-                                <option value="info">Blue (Info)</option>
-                                <option value="warning">Yellow (Warning)</option>
-                                <option value="urgent">Red (Urgent)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div x-show="alertTarget === 'specific'">
-                        <input x-model="specificId" placeholder="Paste Agency ID or Client ID" class="w-full bg-gray-900 border border-blue-500 rounded p-2 text-white">
-                    </div>
-
-                    <button @click="sendAlert" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded">Send Message</button>
-                </div>
-            </div>
-
-            <!-- SECTION 2: DISPUTE MANAGER -->
-            <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                <h2 class="text-xl font-bold mb-4 text-red-400">🚨 Disputes & Actions</h2>
-                <div class="overflow-y-auto max-h-96">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-900 text-gray-400"><tr><th class="p-3">Details</th><th class="p-3 text-right">Action</th></tr></thead>
-                        <tbody class="divide-y divide-gray-700">
-                            <template x-for="d in disputes">
-                                <tr class="hover:bg-gray-750">
-                                    <td class="p-3">
-                                        <p class="font-bold text-white" x-text="d.clientEmail"></p>
-                                        <p class="text-xs text-gray-500">Reported: <span class="text-red-400" x-text="d.agencyId"></span></p>
-                                        <p class="text-xs text-green-400" x-text="'Amount: $' + d.amount"></p>
-                                    </td>
-                                    <td class="p-3 text-right space-y-2">
-                                        <button @click="warnAgency(d.agencyId)" class="bg-yellow-600 text-white px-2 py-1 rounded text-xs w-full hover:bg-yellow-500">Warn</button>
-                                        <button @click="unwarnAgency(d.agencyId)" class="bg-green-700 text-white px-2 py-1 rounded text-xs w-full hover:bg-green-600">Un-Warn</button>
-                                        <button @click="blockAgency(d.agencyId)" class="bg-red-700 text-white px-2 py-1 rounded text-xs w-full hover:bg-red-600 border border-red-500">BLOCK</button>
-                                    </td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="flex gap-4">
+                <button @click="sendBroadcast = !sendBroadcast" class="bg-blue-600 px-4 py-2 rounded">📢 Send Alert</button>
+                <button @click="auth.signOut()" class="bg-gray-700 px-4 py-2 rounded">Logout</button>
             </div>
         </div>
+
+        <!-- BROADCAST MODAL -->
+        <div x-show="sendBroadcast" class="bg-gray-800 p-6 rounded mb-8 border border-blue-500">
+            <h2 class="text-xl font-bold mb-4">Send System Alert</h2>
+            <textarea x-model="alertMsg" class="w-full bg-gray-900 p-3 rounded text-white border border-gray-600" placeholder="Message..."></textarea>
+            <div class="flex gap-4 mt-4">
+                <select x-model="alertTarget" class="bg-gray-900 p-2 rounded border border-gray-600">
+                    <option value="all">Everyone</option>
+                    <option value="agencies">Agencies</option>
+                    <option value="clients">Clients</option>
+                </select>
+                <select x-model="alertType" class="bg-gray-900 p-2 rounded border border-gray-600">
+                    <option value="info">Info (Blue)</option>
+                    <option value="warning">Warning (Yellow)</option>
+                    <option value="urgent">Urgent (Red)</option>
+                </select>
+                <button @click="sendAlert" class="bg-green-600 px-6 rounded font-bold">Send</button>
+            </div>
+        </div>
+
+        <!-- FOLDERS / TABS -->
+        <div class="flex gap-4 mb-6">
+            <button @click="filter='open'" :class="filter=='open' ? 'bg-red-600' : 'bg-gray-800'" class="px-6 py-3 rounded font-bold">
+                🚨 New Disputes (<span x-text="disputes.filter(d => d.status === 'open').length"></span>)
+            </button>
+            <button @click="filter='warned'" :class="filter=='warned' ? 'bg-yellow-600' : 'bg-gray-800'" class="px-6 py-3 rounded font-bold">
+                ⚠️ Warned Agencies
+            </button>
+            <button @click="filter='blocked'" :class="filter=='blocked' ? 'bg-gray-600' : 'bg-gray-800'" class="px-6 py-3 rounded font-bold">
+                🚫 Blocked Agencies
+            </button>
+        </div>
+
+        <!-- DISPUTE TABLE -->
+        <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-gray-900 text-gray-400">
+                    <tr>
+                        <th class="p-4">Reporter (Client)</th>
+                        <th class="p-4">Accused (Agency)</th>
+                        <th class="p-4">Issue</th>
+                        <th class="p-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700">
+                    <template x-for="d in filteredDisputes">
+                        <tr class="hover:bg-gray-750">
+                            <!-- Client Details -->
+                            <td class="p-4">
+                                <p class="font-bold text-white text-lg" x-text="d.clientName || 'Unknown Name'"></p>
+                                <p class="text-blue-400" x-text="d.clientEmail"></p>
+                                <p class="text-gray-500" x-text="d.clientPhone || 'No Phone'"></p>
+                            </td>
+                            <!-- Agency Details -->
+                            <td class="p-4">
+                                <p class="font-bold text-red-400" x-text="'ID: ' + d.agencyId"></p>
+                                <p class="text-gray-500">Contact info requires fetch</p>
+                            </td>
+                            <!-- Issue -->
+                            <td class="p-4">
+                                <span class="bg-red-900 text-red-200 px-2 py-1 rounded text-xs">Payment Missing</span>
+                                <p class="mt-1 text-2xl font-bold text-green-400" x-text="'$' + d.amount"></p>
+                                <p class="text-xs text-gray-500" x-text="new Date(d.date.seconds*1000).toLocaleDateString()"></p>
+                            </td>
+                            <!-- Actions -->
+                            <td class="p-4 text-right space-y-2">
+                                
+                                <div x-show="filter === 'open'">
+                                    <button @click="updateStatus(d, 'warned', true)" class="bg-yellow-600 text-white px-3 py-1 rounded w-full hover:bg-yellow-500">Warn Agency</button>
+                                    <button @click="updateStatus(d, 'blocked', true)" class="bg-red-600 text-white px-3 py-1 rounded w-full hover:bg-red-500 border border-red-400">BLOCK Agency</button>
+                                </div>
+
+                                <div x-show="filter === 'warned'">
+                                    <button @click="updateStatus(d, 'open', false)" class="bg-green-700 text-white px-3 py-1 rounded w-full">Un-Warn (Restore)</button>
+                                    <button @click="updateStatus(d, 'blocked', true)" class="bg-red-600 text-white px-3 py-1 rounded w-full">Escalate to BLOCK</button>
+                                </div>
+
+                                <div x-show="filter === 'blocked'">
+                                    <button @click="updateStatus(d, 'open', false)" class="bg-gray-500 text-white px-3 py-1 rounded w-full">Un-Block</button>
+                                </div>
+
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+            <div x-show="filteredDisputes.length === 0" class="p-8 text-center text-gray-500">Folder is empty.</div>
+        </div>
+
     </div>
 
     <script>
         function adminPanel() {
             return {
                 disputes: [],
-                alertMsg: '',
-                alertTarget: 'all',
-                specificId: '',
-                alertType: 'info',
+                filter: 'open', // open, warned, blocked
+                sendBroadcast: false,
+                alertMsg: '', alertTarget: 'all', alertType: 'info',
 
                 init() {
                     const db = firebase.firestore();
-                    db.collection('disputes').get().then(snap => {
+                    db.collection('disputes').onSnapshot(snap => {
                         this.disputes = snap.docs.map(d => ({id: d.id, ...d.data()}));
                     });
                 },
 
-                async sendAlert() {
-                    if(!this.alertMsg) return;
+                get filteredDisputes() {
+                    return this.disputes.filter(d => d.status === this.filter);
+                },
+
+                async updateStatus(dispute, newStatus, isPunishment) {
                     const db = firebase.firestore();
                     
-                    let finalTarget = this.alertTarget;
-                    if(this.alertTarget === 'specific') {
-                        if(!this.specificId) { alert("Please enter an ID"); return; }
-                        finalTarget = this.specificId; 
+                    // 1. Update Dispute Folder
+                    await db.collection('disputes').doc(dispute.id).update({ status: newStatus });
+
+                    // 2. Update Agency Account Status
+                    if (newStatus === 'warned') {
+                        await db.collection('agencies').doc(dispute.agencyId).update({ warningStatus: true, blockedStatus: false });
+                    } else if (newStatus === 'blocked') {
+                        await db.collection('agencies').doc(dispute.agencyId).update({ warningStatus: true, blockedStatus: true });
+                    } else if (newStatus === 'open') {
+                        // Restore
+                        await db.collection('agencies').doc(dispute.agencyId).update({ warningStatus: false, blockedStatus: false });
                     }
-                    
+                },
+
+                async sendAlert() {
+                    const db = firebase.firestore();
                     await db.collection('alerts').add({
                         message: this.alertMsg,
-                        target: finalTarget,
+                        target: this.alertTarget,
                         type: this.alertType,
-                        sender: 'Super Admin', // Fixed Sender Name
+                        sender: 'Super Admin',
                         createdAt: new Date()
                     });
-                    
-                    this.alertMsg = '';
-                    this.specificId = '';
-                    alert("Message Sent!");
-                },
-
-                // FIXED: Defined 'db' inside every function so it works 100%
-                async warnAgency(id) {
-                    const db = firebase.firestore();
-                    await db.collection('agencies').doc(id).update({ warningStatus: true });
-                    alert("Warning Sent.");
-                },
-
-                async unwarnAgency(id) {
-                    const db = firebase.firestore();
-                    await db.collection('agencies').doc(id).update({ warningStatus: false });
-                    alert("Warning Removed.");
-                },
-
-                async blockAgency(id) {
-                    if(confirm("BLOCK this Agency? They will lose access immediately.")) {
-                        const db = firebase.firestore();
-                        await db.collection('agencies').doc(id).update({ blockedStatus: true });
-                        alert("Agency Blocked.");
-                    }
+                    this.sendBroadcast = false; this.alertMsg = '';
+                    alert("Alert Sent!");
                 }
             }
         }
