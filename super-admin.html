@@ -15,98 +15,86 @@
 
     <div class="container mx-auto p-6 max-w-7xl">
         
-        <!-- TOP HEADER & NAVIGATION -->
+        <!-- TOP HEADER -->
         <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
             <h1 class="text-3xl font-bold text-red-500"><i class="fas fa-shield-alt"></i> God Mode</h1>
             <div class="flex gap-4">
-                <!-- Navigation Tabs -->
-                <button @click="nav='dashboard'" 
-                        :class="nav==='dashboard' ? 'bg-blue-600' : 'bg-gray-700'" 
-                        class="px-4 py-2 rounded font-bold transition">
-                    Disputes & Actions
+                <button @click="nav='dashboard'" :class="nav==='dashboard' ? 'bg-blue-600' : 'bg-gray-700'" class="px-4 py-2 rounded font-bold transition">
+                    Dashboard (Broadcasts & Disputes)
                 </button>
-                <button @click="nav='directory'; loadDirectory()" 
-                        :class="nav==='directory' ? 'bg-blue-600' : 'bg-gray-700'" 
-                        class="px-4 py-2 rounded font-bold transition">
-                    Network Directory
+                <button @click="nav='directory'; loadDirectory()" :class="nav==='directory' ? 'bg-blue-600' : 'bg-gray-700'" class="px-4 py-2 rounded font-bold transition">
+                    Network Directory (Private Msg)
                 </button>
                 <button @click="auth.signOut()" class="bg-gray-800 border border-gray-600 px-4 py-2 rounded hover:bg-gray-700">Logout</button>
             </div>
         </div>
 
         <!-- ============================================= -->
-        <!-- SECTION 1: DISPUTES & ACTIONS (EXISTING CODE) -->
+        <!-- VIEW 1: DASHBOARD                             -->
+        <!-- (Broadcasts + Disputes)                       -->
         <!-- ============================================= -->
         <div x-show="nav === 'dashboard'">
-            <!-- Broadcast Box -->
-            <div class="bg-gray-800 p-6 rounded mb-8 border border-gray-700">
-                <h2 class="text-xl font-bold mb-4 text-blue-400">📢 Global Broadcast</h2>
-                <div class="flex gap-4">
-                    <input x-model="alertMsg" class="flex-1 bg-gray-900 p-2 rounded text-white border border-gray-600" placeholder="Send a message to everyone...">
-                    <select x-model="alertType" class="bg-gray-900 p-2 rounded border border-gray-600">
-                        <option value="info">Info (Blue)</option>
-                        <option value="warning">Warning (Yellow)</option>
-                        <option value="urgent">Urgent (Red)</option>
-                    </select>
-                    <button @click="sendBroadcast" class="bg-green-600 px-6 rounded font-bold">Broadcast</button>
+            
+            <!-- 1. GLOBAL BROADCAST SECTION (Restored) -->
+            <div class="bg-gray-800 p-6 rounded-lg mb-8 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 text-blue-400">📢 Global Broadcast System</h2>
+                <p class="text-gray-400 text-sm mb-4">Send a message to groups of users. This will appear on their dashboard top banner.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Message Input -->
+                    <div class="md:col-span-2">
+                        <input x-model="alertMsg" class="w-full bg-gray-900 border border-gray-600 p-3 rounded text-white focus:border-blue-500 outline-none" placeholder="Type your announcement here...">
+                    </div>
+                    
+                    <!-- Target Selection -->
+                    <div>
+                        <select x-model="alertTarget" class="w-full bg-gray-900 border border-gray-600 p-3 rounded text-white">
+                            <option value="all">Everyone (Global)</option>
+                            <option value="agencies">All Agencies</option>
+                            <option value="clients">All Clients</option>
+                        </select>
+                    </div>
+
+                    <!-- Type & Send -->
+                    <div class="flex gap-2">
+                        <select x-model="alertType" class="bg-gray-900 border border-gray-600 p-3 rounded text-white flex-1">
+                            <option value="info">Info (Blue)</option>
+                            <option value="warning">Warning (Yellow)</option>
+                            <option value="urgent">Urgent (Red)</option>
+                        </select>
+                        <button @click="sendBroadcast" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 rounded transition">Send</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Folders -->
+            <!-- 2. DISPUTE MANAGER -->
             <div class="flex gap-4 mb-6">
-                <button @click="filter='open'" :class="filter=='open' ? 'bg-red-600' : 'bg-gray-800'" class="px-6 py-3 rounded font-bold">
-                    🚨 New Disputes (<span x-text="disputes.filter(d => d.status === 'open').length"></span>)
-                </button>
-                <button @click="filter='warned'" :class="filter=='warned' ? 'bg-yellow-600' : 'bg-gray-800'" class="px-6 py-3 rounded font-bold">
-                    ⚠️ Warned
-                </button>
-                <button @click="filter='blocked'" :class="filter=='blocked' ? 'bg-gray-600' : 'bg-gray-800'" class="px-6 py-3 rounded font-bold">
-                    🚫 Blocked
-                </button>
+                <button @click="filter='open'" :class="filter=='open' ? 'bg-red-600' : 'bg-gray-800'" class="px-6 py-3 rounded font-bold">New Disputes (<span x-text="disputes.filter(d => d.status === 'open').length"></span>)</button>
+                <button @click="filter='warned'" :class="filter=='warned' ? 'bg-yellow-600' : 'bg-gray-800'" class="px-6 py-3 rounded font-bold">Warned</button>
+                <button @click="filter='blocked'" :class="filter=='blocked' ? 'bg-gray-600' : 'bg-gray-800'" class="px-6 py-3 rounded font-bold">Blocked</button>
             </div>
 
-            <!-- Dispute Table -->
             <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
                 <table class="w-full text-left text-sm">
-                    <thead class="bg-gray-900 text-gray-400">
-                        <tr>
-                            <th class="p-4">Reporter (Client)</th>
-                            <th class="p-4">Accused (Agency)</th>
-                            <th class="p-4">Issue</th>
-                            <th class="p-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
+                    <thead class="bg-gray-900 text-gray-400"><tr><th class="p-4">Reporter</th><th class="p-4">Agency</th><th class="p-4">Details</th><th class="p-4 text-right">Actions</th></tr></thead>
                     <tbody class="divide-y divide-gray-700">
                         <template x-for="d in filteredDisputes">
                             <tr class="hover:bg-gray-750">
-                                <td class="p-4">
-                                    <p class="font-bold text-white text-lg" x-text="d.clientName || 'Unknown Name'"></p>
-                                    <p class="text-blue-400" x-text="d.clientEmail"></p>
-                                    <p class="text-gray-500" x-text="d.clientPhone || 'No Phone'"></p>
-                                </td>
-                                <td class="p-4">
-                                    <p class="font-bold text-red-400" x-text="'ID: ' + d.agencyId"></p>
-                                </td>
-                                <td class="p-4">
-                                    <span class="bg-red-900 text-red-200 px-2 py-1 rounded text-xs">Payment Missing</span>
-                                    <p class="mt-1 text-2xl font-bold text-green-400" x-text="'$' + d.amount"></p>
-                                    <p class="text-xs text-gray-500" x-text="new Date(d.date.seconds*1000).toLocaleDateString()"></p>
-                                </td>
-                                <td class="p-4 text-right space-y-2">
+                                <td class="p-4"><p x-text="d.clientName || d.clientEmail"></p><p class="text-xs text-gray-500" x-text="d.clientPhone"></p></td>
+                                <td class="p-4"><p class="text-red-400" x-text="d.agencyId"></p></td>
+                                <td class="p-4"><p class="text-green-400 font-bold" x-text="'$' + d.amount"></p></td>
+                                <td class="p-4 text-right space-x-2">
                                     <template x-if="filter === 'open'">
-                                        <div class="space-y-2">
-                                            <button @click="updateStatus(d, 'warned')" class="bg-yellow-600 text-white px-3 py-1 rounded w-full hover:bg-yellow-500">Warn Agency</button>
-                                            <button @click="updateStatus(d, 'blocked')" class="bg-red-600 text-white px-3 py-1 rounded w-full hover:bg-red-500 border border-red-400">BLOCK Agency</button>
-                                        </div>
+                                        <span>
+                                            <button @click="updateStatus(d, 'warned')" class="bg-yellow-600 px-2 py-1 rounded text-xs hover:bg-yellow-500">Warn</button>
+                                            <button @click="updateStatus(d, 'blocked')" class="bg-red-600 px-2 py-1 rounded text-xs hover:bg-red-500">Block</button>
+                                        </span>
                                     </template>
                                     <template x-if="filter === 'warned'">
-                                        <div class="space-y-2">
-                                            <button @click="updateStatus(d, 'open')" class="bg-green-700 text-white px-3 py-1 rounded w-full">Un-Warn</button>
-                                            <button @click="updateStatus(d, 'blocked')" class="bg-red-600 text-white px-3 py-1 rounded w-full">Escalate to BLOCK</button>
-                                        </div>
+                                        <button @click="updateStatus(d, 'open')" class="bg-green-700 px-2 py-1 rounded text-xs hover:bg-green-600">Un-Warn</button>
                                     </template>
                                     <template x-if="filter === 'blocked'">
-                                        <button @click="updateStatus(d, 'open')" class="bg-gray-500 text-white px-3 py-1 rounded w-full">Un-Block</button>
+                                        <button @click="updateStatus(d, 'open')" class="bg-gray-500 px-2 py-1 rounded text-xs hover:bg-gray-400">Un-Block</button>
                                     </template>
                                 </td>
                             </tr>
@@ -118,11 +106,11 @@
         </div>
 
         <!-- ============================================= -->
-        <!-- SECTION 2: NETWORK DIRECTORY (NEW!)           -->
+        <!-- VIEW 2: NETWORK DIRECTORY (PRIVATE MSG)       -->
         <!-- ============================================= -->
         <div x-show="nav === 'directory'">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-blue-400">All Agencies & Clients</h2>
+                <h2 class="text-2xl font-bold text-blue-400">Agencies & Clients Directory</h2>
                 <button @click="loadDirectory()" class="text-sm text-gray-400 hover:text-white"><i class="fas fa-sync"></i> Refresh List</button>
             </div>
             
@@ -130,7 +118,7 @@
                 <template x-for="agency in allAgencies">
                     <div class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
                         
-                        <!-- Agency Header Row -->
+                        <!-- Agency Header -->
                         <div class="p-4 flex justify-between items-center bg-gray-850 hover:bg-gray-750 transition">
                             <div class="flex items-center gap-4">
                                 <div class="bg-blue-900 text-blue-200 w-10 h-10 rounded flex items-center justify-center font-bold">A</div>
@@ -141,12 +129,10 @@
                                 </div>
                             </div>
                             <div class="flex gap-2">
-                                <!-- Message Agency Button -->
                                 <button @click="openCompose(agency.id, agency.agencyName || agency.email, 'Agency')" 
                                         class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded text-sm font-bold">
                                     Message Agency
                                 </button>
-                                <!-- View Clients Toggle -->
                                 <button @click="toggleClients(agency.id)" 
                                         class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm border border-gray-500">
                                     View Clients <span x-show="expandedAgency === agency.id">▼</span><span x-show="expandedAgency !== agency.id">▶</span>
@@ -154,10 +140,9 @@
                             </div>
                         </div>
 
-                        <!-- Clients List (Expandable) -->
+                        <!-- Clients List -->
                         <div x-show="expandedAgency === agency.id" class="bg-gray-900 border-t border-gray-700 p-4 pl-12">
                             <h4 class="text-xs font-bold text-gray-500 uppercase mb-3">Clients under this Agency</h4>
-                            
                             <div x-show="clientsLoading" class="text-sm text-gray-500 py-2">Loading clients...</div>
                             
                             <template x-for="client in agencyClients">
@@ -170,17 +155,13 @@
                                             <p class="text-[10px] text-gray-600 font-mono" x-text="client.id"></p>
                                         </div>
                                     </div>
-                                    <!-- Message Client Button -->
                                     <button @click="openCompose(client.id, client.fullName || client.email, 'Client')" 
                                             class="bg-gray-700 hover:bg-gray-600 text-xs px-3 py-1 rounded text-white border border-gray-600">
                                         Message Client
                                     </button>
                                 </div>
                             </template>
-                            
-                            <div x-show="!clientsLoading && agencyClients.length === 0" class="text-sm text-gray-600 italic py-2">
-                                No clients registered under this agency yet.
-                            </div>
+                            <div x-show="!clientsLoading && agencyClients.length === 0" class="text-sm text-gray-600 italic py-2">No clients found.</div>
                         </div>
 
                     </div>
@@ -188,7 +169,7 @@
             </div>
         </div>
 
-        <!-- PRIVATE MESSAGE MODAL POPUP -->
+        <!-- PRIVATE MESSAGE MODAL -->
         <div x-show="composeOpen" x-cloak class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
             <div class="bg-gray-800 p-6 rounded-lg shadow-xl border border-blue-500 w-full max-w-md">
                 <div class="flex justify-between items-center mb-4">
@@ -216,38 +197,26 @@
     <script>
         function adminPanel() {
             return {
-                nav: 'dashboard', // Controls tabs: 'dashboard' or 'directory'
-                disputes: [], 
-                filter: 'open',
+                nav: 'dashboard',
+                disputes: [], filter: 'open',
                 
                 // Broadcast Data
-                sendBroadcastBox: false,
                 alertMsg: '', alertTarget: 'all', alertType: 'info',
                 
                 // Directory Data
-                allAgencies: [],
-                expandedAgency: null,
-                agencyClients: [],
-                clientsLoading: false,
+                allAgencies: [], expandedAgency: null, agencyClients: [], clientsLoading: false,
 
-                // Private Messaging Data
-                composeOpen: false,
-                composeMsg: '',
-                composeTargetId: '',
-                composeTargetName: '',
-                composeRole: '',
+                // Private Msg Data
+                composeOpen: false, composeMsg: '', composeTargetId: '', composeTargetName: '', composeRole: '',
 
                 init() {
                     const db = firebase.firestore();
-                    // Load Disputes Realtime
                     db.collection('disputes').onSnapshot(snap => {
                         this.disputes = snap.docs.map(d => ({id: d.id, ...d.data()}));
                     });
                 },
 
-                get filteredDisputes() {
-                    return this.disputes.filter(d => d.status === this.filter);
-                },
+                get filteredDisputes() { return this.disputes.filter(d => d.status === this.filter); },
 
                 // --- DISPUTE ACTIONS ---
                 async updateStatus(dispute, newStatus) {
@@ -259,6 +228,7 @@
                     if (newStatus === 'open') await db.collection('agencies').doc(dispute.agencyId).update({ warningStatus: false, blockedStatus: false });
                 },
 
+                // --- BROADCAST (BULK) ---
                 async sendBroadcast() {
                     if(!this.alertMsg) return;
                     const db = firebase.firestore();
@@ -282,7 +252,7 @@
 
                 async toggleClients(agencyId) {
                     if (this.expandedAgency === agencyId) {
-                        this.expandedAgency = null; // Collapse if already open
+                        this.expandedAgency = null; 
                         return;
                     }
                     this.expandedAgency = agencyId;
@@ -290,7 +260,6 @@
                     this.agencyClients = [];
 
                     const db = firebase.firestore();
-                    // Fetch Clients for this specific Agency
                     const snap = await db.collection('users').where('parentAgency', '==', agencyId).get();
                     this.agencyClients = snap.docs.map(d => ({id: d.id, ...d.data()}));
                     this.clientsLoading = false;
@@ -309,17 +278,16 @@
                     if (!this.composeMsg) return;
                     const db = firebase.firestore();
                     
-                    // Creates an alert specifically for that User ID (Agency or Client)
                     await db.collection('alerts').add({
                         message: this.composeMsg,
                         target: this.composeTargetId, // Targeted Delivery
-                        type: 'info', // Default to Blue for PMs
+                        type: 'info',
                         sender: 'Super Admin (Private)',
                         createdAt: new Date()
                     });
                     
                     this.composeOpen = false;
-                    alert("Private Message Sent to " + this.composeTargetName);
+                    alert("Private Message Sent!");
                 }
             }
         }
