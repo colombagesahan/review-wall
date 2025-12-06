@@ -8,9 +8,9 @@
     <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
-    <!-- FIREBASE SCRIPTS (Order is Important) -->
+    <!-- FIREBASE SCRIPTS -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script> <!-- THIS WAS MISSING -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     
     <!-- Your Config -->
@@ -81,8 +81,10 @@
                             throw new Error("No Agency ID in URL");
                         }
 
-                        // Use global 'db' from window
-                        const doc = await window.db.collection('agencies').doc(this.aid).get();
+                        // === FIX IS HERE ===
+                        // We connect to the database directly here to be 100% sure it exists
+                        const db = firebase.firestore(); 
+                        const doc = await db.collection('agencies').doc(this.aid).get();
                         
                         if(doc.exists) {
                             this.data = doc.data();
@@ -96,7 +98,8 @@
                         if(e.code === 'permission-denied') {
                             this.errorMessage = "Security Error: Please update Firestore Rules to allow 'read: true' for agencies.";
                         } else {
-                            this.errorMessage = e.message;
+                            // This catches the 'collection' error if it still happens
+                            this.errorMessage = "System Error: " + e.message;
                         }
                     } finally {
                         this.loading = false;
@@ -104,7 +107,6 @@
                 },
 
                 joinNow() {
-                    // Navigate to Index with REF code
                     const baseUrl = window.location.href.split('/').slice(0,-1).join('/');
                     window.location.href = `${baseUrl}/index.html?ref=${this.aid}`;
                 }
