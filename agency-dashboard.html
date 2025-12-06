@@ -45,16 +45,16 @@
             <!-- Menu -->
             <nav class="flex-1 p-2 space-y-1 overflow-y-auto">
                 <a @click="switchTab('profile')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer" :class="{'bg-blue-900': tab==='profile'}">
-                    <i class="fas fa-id-card w-6"></i> Agency Profile <span x-show="!isBasicProfileComplete" class="text-red-400 text-xs ml-2">●</span>
+                    <i class="fas fa-id-card w-6 mr-2"></i> Agency Profile <span x-show="!isBasicProfileComplete" class="text-red-400 text-xs ml-2">●</span>
                 </a>
                 <a @click="switchTab('overview')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer" :class="{'bg-slate-800': tab==='overview'}">
-                    <i class="fas fa-home w-6"></i> Overview
+                    <i class="fas fa-globe w-6 mr-2"></i> My Promotional Website
                 </a>
                 <a @click="switchTab('clients')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer" :class="{'bg-slate-800': tab==='clients'}">
-                    <i class="fas fa-users w-6"></i> Clients
+                    <i class="fas fa-users w-6 mr-2"></i> Clients
                 </a>
                 <a @click="switchTab('settings')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer" :class="{'bg-slate-800': tab==='settings'}">
-                    <i class="fas fa-wallet w-6"></i> Payments
+                    <i class="fas fa-wallet w-6 mr-2"></i> Payments
                 </a>
             </nav>
             <button @click="auth.signOut()" class="p-4 text-gray-400 hover:text-white text-sm border-t border-slate-800">Logout</button>
@@ -83,11 +83,11 @@
             <!-- ======================= -->
             <div x-show="tab==='profile'">
                 <h2 class="text-3xl font-bold mb-2">Agency Profile</h2>
-                <p class="text-gray-500 mb-6">Complete your profile to unlock features and verify your business.</p>
+                <p class="text-gray-500 mb-6">Complete Basic Details to unlock your website. Verify business for Unlimited.</p>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     
-                    <!-- 1. BASIC DETAILS (REQUIRED FOR FREE PLAN) -->
+                    <!-- 1. BASIC DETAILS (REQUIRED) -->
                     <div class="bg-white p-6 rounded shadow border-t-4 border-blue-500 h-fit">
                         <h3 class="font-bold text-xl mb-4 flex items-center gap-2">
                             1. Basic Details 
@@ -98,22 +98,39 @@
                                 <label class="text-xs font-bold text-gray-500 uppercase">Agency Name *</label>
                                 <input x-model="profile.agencyName" class="w-full border p-2 rounded">
                             </div>
+                            
+                            <!-- Country Dropdown with Auto-Code -->
                             <div>
                                 <label class="text-xs font-bold text-gray-500 uppercase">Residence Country *</label>
-                                <input x-model="profile.country" class="w-full border p-2 rounded">
+                                <select x-model="profile.country" @change="updatePhoneCode" class="w-full border p-2 rounded bg-white">
+                                    <option value="">Select Country</option>
+                                    <option value="Sri Lanka">Sri Lanka</option>
+                                    <option value="United States">United States</option>
+                                    <option value="United Kingdom">United Kingdom</option>
+                                    <option value="India">India</option>
+                                    <option value="Canada">Canada</option>
+                                    <option value="Australia">Australia</option>
+                                    <option value="Germany">Germany</option>
+                                    <option value="France">France</option>
+                                    <option value="Other">Other</option>
+                                </select>
                             </div>
+
                             <div>
                                 <label class="text-xs font-bold text-gray-500 uppercase">Owner/Manager Name *</label>
                                 <input x-model="profile.ownerName" class="w-full border p-2 rounded">
                             </div>
+                            
                             <div>
-                                <label class="text-xs font-bold text-gray-500 uppercase">Phone (with Country Code) *</label>
-                                <input x-model="profile.phone" class="w-full border p-2 rounded" placeholder="+1 234 567 890">
+                                <label class="text-xs font-bold text-gray-500 uppercase">Phone (International) *</label>
+                                <input x-model="profile.phone" class="w-full border p-2 rounded" placeholder="+94...">
                             </div>
+                            
                             <div>
                                 <label class="text-xs font-bold text-gray-500 uppercase">WhatsApp Number *</label>
-                                <input x-model="profile.whatsapp" class="w-full border p-2 rounded" placeholder="+1 234 567 890">
+                                <input x-model="profile.whatsapp" class="w-full border p-2 rounded" placeholder="+94...">
                             </div>
+                            
                             <div>
                                 <label class="text-xs font-bold text-gray-500 uppercase">Email Address *</label>
                                 <input x-model="profile.email" class="w-full border p-2 rounded bg-gray-100" readonly>
@@ -133,7 +150,7 @@
                             <button @click="saveBasicProfile" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded">
                                 Save Basic Profile
                             </button>
-                            <p class="text-xs text-center text-gray-400 mt-2">Allows up to 10 Clients</p>
+                            <p class="text-xs text-center text-gray-400 mt-2">Saving will unlock your Promotional Website.</p>
                         </div>
                     </div>
 
@@ -187,9 +204,9 @@
                 </div>
             </div>
 
-            <!-- TAB: OVERVIEW -->
+            <!-- TAB: PROMOTIONAL WEBSITE (Formerly Overview) -->
             <div x-show="tab==='overview'">
-                <h2 class="text-3xl font-bold mb-6">Overview</h2>
+                <h2 class="text-3xl font-bold mb-6">My Promotional Website</h2>
                 
                 <!-- Limit Warning -->
                 <div x-show="clientCount >= 10 && plan === 'free'" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
@@ -201,20 +218,21 @@
                 <!-- Promo Link (Hidden if profile incomplete) -->
                 <div x-show="isBasicProfileComplete">
                     <div class="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-600">
-                        <h3 class="font-bold text-lg mb-2">Your Promotional Website</h3>
+                        <h3 class="font-bold text-lg mb-2">Your Website Link</h3>
                         <p class="text-sm text-gray-500 mb-2">Share this link to recruit clients:</p>
                         <div class="flex gap-2">
                             <input readonly :value="promoLink" class="w-full bg-gray-100 border p-2 rounded text-sm text-gray-600">
                             <a :href="promoLink" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Open</a>
                         </div>
                     </div>
+                    <p class="text-green-600 font-bold">✅ Link Active</p>
                 </div>
 
-                <div x-show="!isBasicProfileComplete" class="bg-gray-200 p-8 text-center rounded text-gray-500">
-                    <i class="fas fa-lock text-4xl mb-2"></i>
-                    <p class="font-bold">Promotional Link Locked</p>
-                    <p>Please complete your Basic Profile to start recruiting.</p>
-                    <button @click="tab='profile'" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Complete Profile</button>
+                <div x-show="!isBasicProfileComplete" class="bg-gray-200 p-10 text-center rounded-lg text-gray-500 border border-gray-300">
+                    <i class="fas fa-lock text-5xl mb-4 text-gray-400"></i>
+                    <h3 class="text-xl font-bold mb-2">Website Locked</h3>
+                    <p class="mb-4">You must complete the <strong>Basic Profile</strong> (left side) to activate your website.</p>
+                    <button @click="tab='profile'" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700">Go to Profile</button>
                 </div>
             </div>
 
@@ -266,18 +284,31 @@
     <script>
         function agencyApp() {
             return {
-                tab: 'overview', uid: null, promoLink: '',
+                tab: 'profile', // Default to Profile so they see it first
+                uid: null, promoLink: '',
                 clients: [], clientCount: 0,
                 systemAlerts: [], warningStatus: false, blockedStatus: false,
                 
                 // Profile & Plan
-                plan: 'free', // 'free' or 'unlimited'
+                plan: 'free', 
                 profile: {
                     agencyName: '', country: '', ownerName: '', phone: '', whatsapp: '', email: '', agreedLegal: false,
                     targetCountries: '', address: '', gProfile: '', gMap: '', socials: '', brPhotoUrl: ''
                 },
                 isBasicProfileComplete: false,
                 
+                // Country Codes Map
+                countryCodes: {
+                    "Sri Lanka": "+94",
+                    "United States": "+1",
+                    "United Kingdom": "+44",
+                    "India": "+91",
+                    "Canada": "+1",
+                    "Australia": "+61",
+                    "Germany": "+49",
+                    "France": "+33"
+                },
+
                 // Payment Settings
                 paymentData: { paypal: '', stripe: '', payhere: '', bank: '' },
 
@@ -285,7 +316,7 @@
                     auth.onAuthStateChanged(user => {
                         if(user) {
                             this.uid = user.uid;
-                            this.profile.email = user.email; // Auto-fill email
+                            this.profile.email = user.email; 
                             this.promoLink = window.location.href.split('/').slice(0,-1).join('/') + `/agency-promo.html?id=${this.uid}`;
                             
                             this.listenData();
@@ -297,6 +328,15 @@
 
                 switchTab(t) { this.tab = t; },
 
+                updatePhoneCode() {
+                    const code = this.countryCodes[this.profile.country] || "";
+                    if(code) {
+                        // Only add if not already there to prevent duplicates
+                        if(!this.profile.phone.startsWith(code)) this.profile.phone = code + " ";
+                        if(!this.profile.whatsapp.startsWith(code)) this.profile.whatsapp = code + " ";
+                    }
+                },
+
                 listenData() {
                     const db = firebase.firestore();
                     db.collection('agencies').doc(this.uid).onSnapshot(doc => {
@@ -306,10 +346,8 @@
                             this.blockedStatus = data.blockedStatus;
                             this.plan = data.plan || 'free';
                             
-                            // Load Payment Methods
                             if(data.paymentMethods) this.paymentData = data.paymentMethods;
 
-                            // Load Profile Data
                             if(data.profile) {
                                 this.profile = { ...this.profile, ...data.profile };
                                 this.checkBasicProfile();
@@ -320,6 +358,7 @@
 
                 checkBasicProfile() {
                     const p = this.profile;
+                    // Check required fields
                     if(p.agencyName && p.country && p.ownerName && p.phone && p.whatsapp && p.agreedLegal) {
                         this.isBasicProfileComplete = true;
                     } else {
@@ -346,22 +385,40 @@
                 // --- PROFILE FUNCTIONS ---
                 async saveBasicProfile() {
                     const p = this.profile;
+                    
+                    // VALIDATION
                     if(!p.agencyName || !p.country || !p.ownerName || !p.phone || !p.whatsapp) {
                         return alert("Please fill all REQUIRED fields marked with *");
                     }
                     if(!p.agreedLegal) return alert("You must agree to the legal terms.");
 
-                    const db = firebase.firestore();
-                    await db.collection('agencies').doc(this.uid).update({
-                        agencyName: p.agencyName, // Update root level for white-label
-                        profile: this.profile
-                    });
-                    this.checkBasicProfile();
-                    alert("Basic Profile Saved! You can now recruit clients.");
+                    // SAVE TO FIREBASE
+                    try {
+                        const db = firebase.firestore();
+                        await db.collection('agencies').doc(this.uid).update({
+                            agencyName: p.agencyName,
+                            profile: this.profile
+                        });
+                        
+                        this.isBasicProfileComplete = true;
+                        alert("Basic Profile Saved! Redirecting to Website Link...");
+                        
+                        // AUTO-SWITCH TAB
+                        this.tab = 'overview';
+                        
+                    } catch (e) {
+                        console.error(e);
+                        alert("Error saving profile: " + e.message);
+                    }
                 },
 
                 async upgradePlan() {
-                    // 1. Validation
+                    // 1. Check Basic Profile First
+                    if(!this.isBasicProfileComplete) {
+                        return alert("Please complete Step 1: Basic Details first.");
+                    }
+
+                    // 2. Validate Verification Details
                     const p = this.profile;
                     if(!p.targetCountries || !p.address || !p.gProfile || !p.gMap || !p.socials) {
                         return alert("Please fill all Business Verification details to upgrade.");
@@ -372,14 +429,11 @@
                         return alert("Please upload your Business Registration Photo.");
                     }
 
-                    // 2. Mock BR Upload (Just saving file name for now)
                     if(fileInput.files.length > 0) {
                         this.profile.brPhotoUrl = "uploaded_" + fileInput.files[0].name;
                     }
 
-                    // 3. Mock Paddle Payment
                     if(confirm("Opening Payment Gateway (Paddle)...\nPay $10/month for Unlimited Access?")) {
-                        // Simulate Payment Success
                         const db = firebase.firestore();
                         await db.collection('agencies').doc(this.uid).update({
                             plan: 'unlimited',
