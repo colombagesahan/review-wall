@@ -135,7 +135,7 @@
                             const cred = await auth.signInWithEmailAndPassword(cleanEmail, cleanPass);
                             const uid = cred.user.uid;
                             
-                            if(cleanEmail === 'admin@admin.com') { window.location.href = 'super-admin.html'; return; }
+                            if(cleanEmail === 'colombagesahan@gmail.com') { window.location.href = 'super-admin.html'; return; }
 
                             // Redirect based on role
                             const agencyDoc = await db.collection('agencies').doc(uid).get();
