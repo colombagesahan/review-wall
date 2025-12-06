@@ -88,17 +88,16 @@
                             const doc = await db.collection('agencies').doc(ref).get();
                             if(doc.exists) {
                                 this.inviteAgencyName = doc.data().agencyName || "Store Platform";
-                                document.title = this.inviteAgencyName + " Login"; // Change Browser Tab Title
+                                document.title = this.inviteAgencyName + " Login"; 
                             }
                         } catch(e) { console.error(e); }
                         
-                        this.openLogin = true; // Auto open modal for smoother UX
+                        this.openLogin = true; 
                     }
                 },
 
                 async handleAuth(action) {
                     this.error = '';
-                    // FIX 3: ADD .trim() TO REMOVE SPACES
                     const cleanEmail = this.email.trim();
                     const cleanPass = this.password.trim();
 
@@ -110,6 +109,7 @@
                     try {
                         if (action === 'signup') {
                             const cred = await auth.createUserWithEmailAndPassword(cleanEmail, cleanPass);
+                            
                             if (this.inviteAgencyId) {
                                 // REGISTER AS CLIENT
                                 await db.collection('users').doc(cred.user.uid).set({
@@ -122,10 +122,12 @@
                                 window.location.href = 'client-dashboard.html';
                             } else {
                                 // REGISTER AS AGENCY
+                                // === THIS IS THE IMPORTANT FIX ===
                                 await db.collection('agencies').doc(cred.user.uid).set({
                                     email: cleanEmail,
                                     role: 'agency',
                                     agencyName: 'My Agency',
+                                    warningStatus: false, // <--- I ADDED THIS BACK
                                     createdAt: new Date()
                                 });
                                 window.location.href = 'agency-dashboard.html';
@@ -135,7 +137,11 @@
                             const cred = await auth.signInWithEmailAndPassword(cleanEmail, cleanPass);
                             const uid = cred.user.uid;
                             
-                            if(cleanEmail === 'colombagesahan@gmail.com') { window.location.href = 'super-admin.html'; return; }
+                            // Super Admin Check
+                            if(cleanEmail === 'colombagesahan@gmail.com') { 
+                                window.location.href = 'super-admin.html'; 
+                                return; 
+                            }
 
                             // Redirect based on role
                             const agencyDoc = await db.collection('agencies').doc(uid).get();
