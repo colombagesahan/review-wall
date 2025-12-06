@@ -12,7 +12,7 @@
 </head>
 <body class="bg-gray-50 font-sans" x-data="clientApp()">
 
-    <!-- SYSTEM ALERTS (Messages from Admin) -->
+    <!-- SYSTEM ALERTS -->
     <template x-for="alert in systemAlerts">
         <div class="px-4 py-3 text-white text-center font-bold text-sm"
              :class="{
@@ -25,7 +25,10 @@
     </template>
 
     <nav class="bg-white shadow p-4 flex justify-between items-center">
-        <h1 class="font-bold text-xl">Store Manager</h1>
+        <!-- WHITE LABEL HEADER -->
+        <h1 class="font-bold text-xl">
+            <span x-text="agencyName || 'Store'"></span> Manager
+        </h1>
         <button @click="auth.signOut()" class="text-gray-500">Logout</button>
     </nav>
 
@@ -60,7 +63,6 @@
                 <button @click="addProduct" class="bg-blue-600 text-white px-4 rounded">Add</button>
             </div>
         </div>
-
     </div>
 
     <script>
@@ -70,6 +72,7 @@
                 userData: {},
                 newProd: {name:'', price:''},
                 systemAlerts: [],
+                agencyName: '', // NEW
 
                 init() {
                     auth.onAuthStateChanged(user => {
@@ -82,12 +85,24 @@
                 },
 
                 async loadData() {
+                    const db = firebase.firestore();
                     const doc = await db.collection('users').doc(this.uid).get();
-                    if(doc.exists) this.userData = doc.data();
+                    if(doc.exists) {
+                        this.userData = doc.data();
+                        
+                        // NEW: Fetch Parent Agency Name for White Labeling
+                        if(this.userData.parentAgency) {
+                            const agencyDoc = await db.collection('agencies').doc(this.userData.parentAgency).get();
+                            if(agencyDoc.exists) {
+                                this.agencyName = agencyDoc.data().agencyName;
+                                document.title = this.agencyName + " Dashboard";
+                            }
+                        }
+                    }
                 },
 
-                // LOAD ALERTS
                 async loadAlerts() {
+                    const db = firebase.firestore();
                     const snap = await db.collection('alerts').get();
                     this.systemAlerts = snap.docs
                         .map(d => d.data())
@@ -98,6 +113,7 @@
 
                 async addProduct() {
                     if(!this.newProd.name) return;
+                    const db = firebase.firestore();
                     await db.collection('users').doc(this.uid).collection('products').add({
                         name: this.newProd.name,
                         price: parseFloat(this.newProd.price),
@@ -109,6 +125,7 @@
 
                 async sendReminder() {
                     if(confirm("Send a reminder?")) {
+                        const db = firebase.firestore();
                         await db.collection('disputes').add({
                             clientId: this.uid,
                             clientEmail: this.userData.email,
