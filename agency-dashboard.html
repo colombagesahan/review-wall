@@ -204,7 +204,7 @@
                 </div>
             </div>
 
-            <!-- TAB: PROMOTIONAL WEBSITE (Formerly Overview) -->
+            <!-- TAB: PROMOTIONAL WEBSITE -->
             <div x-show="tab==='overview'">
                 <h2 class="text-3xl font-bold mb-6">My Promotional Website</h2>
                 
@@ -331,7 +331,6 @@
                 updatePhoneCode() {
                     const code = this.countryCodes[this.profile.country] || "";
                     if(code) {
-                        // Only add if not already there to prevent duplicates
                         if(!this.profile.phone.startsWith(code)) this.profile.phone = code + " ";
                         if(!this.profile.whatsapp.startsWith(code)) this.profile.whatsapp = code + " ";
                     }
@@ -358,7 +357,6 @@
 
                 checkBasicProfile() {
                     const p = this.profile;
-                    // Check required fields
                     if(p.agencyName && p.country && p.ownerName && p.phone && p.whatsapp && p.agreedLegal) {
                         this.isBasicProfileComplete = true;
                     } else {
@@ -385,25 +383,21 @@
                 // --- PROFILE FUNCTIONS ---
                 async saveBasicProfile() {
                     const p = this.profile;
-                    
-                    // VALIDATION
                     if(!p.agencyName || !p.country || !p.ownerName || !p.phone || !p.whatsapp) {
                         return alert("Please fill all REQUIRED fields marked with *");
                     }
                     if(!p.agreedLegal) return alert("You must agree to the legal terms.");
 
-                    // SAVE TO FIREBASE
                     try {
                         const db = firebase.firestore();
-                        await db.collection('agencies').doc(this.uid).update({
+                        // FIX: Use SET with MERGE: TRUE to prevent "No Document" error for ghost accounts
+                        await db.collection('agencies').doc(this.uid).set({
                             agencyName: p.agencyName,
                             profile: this.profile
-                        });
+                        }, { merge: true });
                         
                         this.isBasicProfileComplete = true;
-                        alert("Basic Profile Saved! Redirecting to Website Link...");
-                        
-                        // AUTO-SWITCH TAB
+                        alert("Basic Profile Saved! Redirecting to Promotional Website...");
                         this.tab = 'overview';
                         
                     } catch (e) {
@@ -413,45 +407,38 @@
                 },
 
                 async upgradePlan() {
-                    // 1. Check Basic Profile First
-                    if(!this.isBasicProfileComplete) {
-                        return alert("Please complete Step 1: Basic Details first.");
-                    }
+                    if(!this.isBasicProfileComplete) return alert("Please complete Step 1: Basic Details first.");
 
-                    // 2. Validate Verification Details
                     const p = this.profile;
                     if(!p.targetCountries || !p.address || !p.gProfile || !p.gMap || !p.socials) {
                         return alert("Please fill all Business Verification details to upgrade.");
                     }
                     
                     const fileInput = document.getElementById('brUpload');
-                    if(fileInput.files.length === 0 && !p.brPhotoUrl) {
-                        return alert("Please upload your Business Registration Photo.");
-                    }
+                    if(fileInput.files.length === 0 && !p.brPhotoUrl) return alert("Please upload your Business Registration Photo.");
 
-                    if(fileInput.files.length > 0) {
-                        this.profile.brPhotoUrl = "uploaded_" + fileInput.files[0].name;
-                    }
+                    if(fileInput.files.length > 0) this.profile.brPhotoUrl = "uploaded_" + fileInput.files[0].name;
 
                     if(confirm("Opening Payment Gateway (Paddle)...\nPay $10/month for Unlimited Access?")) {
                         const db = firebase.firestore();
-                        await db.collection('agencies').doc(this.uid).update({
+                        // FIX: Use SET with MERGE
+                        await db.collection('agencies').doc(this.uid).set({
                             plan: 'unlimited',
                             profile: this.profile
-                        });
+                        }, { merge: true });
                         alert("Upgrade Successful! You now have unlimited clients.");
                     }
                 },
 
                 async saveFullProfile() {
                     const db = firebase.firestore();
-                    await db.collection('agencies').doc(this.uid).update({ profile: this.profile });
+                    await db.collection('agencies').doc(this.uid).set({ profile: this.profile }, { merge: true });
                     alert("Profile Updated.");
                 },
 
                 async savePayments() {
                     const db = firebase.firestore();
-                    await db.collection('agencies').doc(this.uid).update({ paymentMethods: this.paymentData });
+                    await db.collection('agencies').doc(this.uid).set({ paymentMethods: this.paymentData }, { merge: true });
                     alert("Payment Methods Saved!");
                 },
 
