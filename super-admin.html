@@ -27,34 +27,37 @@
                 <div class="space-y-4">
                     <textarea x-model="alertMsg" placeholder="Type message..." class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white h-24"></textarea>
                     
-                    <div class="flex flex-col gap-2">
-                        <label class="text-xs text-gray-400">Who is this for?</label>
-                        <select x-model="alertTarget" class="bg-gray-900 border border-gray-600 rounded p-2 text-white">
-                            <option value="all">Everyone (Global Alert)</option>
-                            <option value="agencies">All Agencies</option>
-                            <option value="clients">All Clients</option>
-                            <option value="specific">Specific ID (Private Message)</option>
-                        </select>
-
-                        <!-- Show this input ONLY if 'Specific' is selected -->
-                        <div x-show="alertTarget === 'specific'">
-                            <input x-model="specificId" placeholder="Paste Agency ID or Client ID here" class="w-full bg-gray-900 border border-blue-500 rounded p-2 text-white">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs text-gray-400">Who is this for?</label>
+                            <select x-model="alertTarget" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
+                                <option value="all">Global (Everyone)</option>
+                                <option value="agencies">All Agencies</option>
+                                <option value="clients">All Clients</option>
+                                <option value="specific">Specific ID</option>
+                            </select>
                         </div>
-
-                        <select x-model="alertType" class="bg-gray-900 border border-gray-600 rounded p-2 text-white">
-                            <option value="info">Blue (Info)</option>
-                            <option value="warning">Yellow (Warning)</option>
-                            <option value="urgent">Red (Urgent)</option>
-                        </select>
+                        <div>
+                            <label class="text-xs text-gray-400">Color / Urgency</label>
+                            <select x-model="alertType" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
+                                <option value="info">Blue (Info)</option>
+                                <option value="warning">Yellow (Warning)</option>
+                                <option value="urgent">Red (Urgent)</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <button @click="sendAlert" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded">Send</button>
+                    <div x-show="alertTarget === 'specific'">
+                        <input x-model="specificId" placeholder="Paste Agency ID or Client ID" class="w-full bg-gray-900 border border-blue-500 rounded p-2 text-white">
+                    </div>
+
+                    <button @click="sendAlert" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded">Send Message</button>
                 </div>
             </div>
 
             <!-- SECTION 2: DISPUTE MANAGER -->
             <div class="bg-gray-800 p-6 rounded-lg border border-gray-700">
-                <h2 class="text-xl font-bold mb-4 text-red-400">🚨 Disputes</h2>
+                <h2 class="text-xl font-bold mb-4 text-red-400">🚨 Disputes & Actions</h2>
                 <div class="overflow-y-auto max-h-96">
                     <table class="w-full text-left text-sm">
                         <thead class="bg-gray-900 text-gray-400"><tr><th class="p-3">Details</th><th class="p-3 text-right">Action</th></tr></thead>
@@ -63,11 +66,13 @@
                                 <tr class="hover:bg-gray-750">
                                     <td class="p-3">
                                         <p class="font-bold text-white" x-text="d.clientEmail"></p>
-                                        <p class="text-xs text-red-400" x-text="'ID: ' + d.agencyId"></p>
+                                        <p class="text-xs text-gray-500">Reported: <span class="text-red-400" x-text="d.agencyId"></span></p>
+                                        <p class="text-xs text-green-400" x-text="'Amount: $' + d.amount"></p>
                                     </td>
                                     <td class="p-3 text-right space-y-2">
-                                        <button @click="warnAgency(d.agencyId)" class="bg-yellow-600 text-white px-2 py-1 rounded text-xs block w-full">Warn</button>
-                                        <button @click="unwarnAgency(d.agencyId)" class="bg-green-700 text-white px-2 py-1 rounded text-xs block w-full">Un-Warn</button>
+                                        <button @click="warnAgency(d.agencyId)" class="bg-yellow-600 text-white px-2 py-1 rounded text-xs w-full hover:bg-yellow-500">Warn</button>
+                                        <button @click="unwarnAgency(d.agencyId)" class="bg-green-700 text-white px-2 py-1 rounded text-xs w-full hover:bg-green-600">Un-Warn</button>
+                                        <button @click="blockAgency(d.agencyId)" class="bg-red-700 text-white px-2 py-1 rounded text-xs w-full hover:bg-red-600 border border-red-500">BLOCK</button>
                                     </td>
                                 </tr>
                             </template>
@@ -98,18 +103,17 @@
                     if(!this.alertMsg) return;
                     const db = firebase.firestore();
                     
-                    // Logic to handle Specific vs Broadcast
                     let finalTarget = this.alertTarget;
                     if(this.alertTarget === 'specific') {
                         if(!this.specificId) { alert("Please enter an ID"); return; }
-                        finalTarget = this.specificId; // Target becomes the specific UID
+                        finalTarget = this.specificId; 
                     }
                     
                     await db.collection('alerts').add({
                         message: this.alertMsg,
                         target: finalTarget,
                         type: this.alertType,
-                        sender: 'Super Admin',
+                        sender: 'Super Admin', // Fixed Sender Name
                         createdAt: new Date()
                     });
                     
@@ -117,8 +121,27 @@
                     this.specificId = '';
                     alert("Message Sent!");
                 },
-                async warnAgency(id) { /* Same as before */ },
-                async unwarnAgency(id) { /* Same as before */ }
+
+                // FIXED: Defined 'db' inside every function so it works 100%
+                async warnAgency(id) {
+                    const db = firebase.firestore();
+                    await db.collection('agencies').doc(id).update({ warningStatus: true });
+                    alert("Warning Sent.");
+                },
+
+                async unwarnAgency(id) {
+                    const db = firebase.firestore();
+                    await db.collection('agencies').doc(id).update({ warningStatus: false });
+                    alert("Warning Removed.");
+                },
+
+                async blockAgency(id) {
+                    if(confirm("BLOCK this Agency? They will lose access immediately.")) {
+                        const db = firebase.firestore();
+                        await db.collection('agencies').doc(id).update({ blockedStatus: true });
+                        alert("Agency Blocked.");
+                    }
+                }
             }
         }
     </script>
