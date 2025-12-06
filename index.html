@@ -16,27 +16,21 @@
     <!-- Navbar -->
     <nav class="bg-white shadow p-4">
         <div class="container mx-auto flex justify-between items-center">
-            <!-- WHITE LABEL LOGIC: Show Agency Name if invited, otherwise AgencyFlow -->
             <div class="text-2xl font-bold text-blue-600" x-text="inviteAgencyName || 'AgencyFlow'"></div>
-            
             <button @click="openLogin=true" class="bg-blue-600 text-white px-6 py-2 rounded-full font-bold">Login</button>
         </div>
     </nav>
 
     <!-- Main Content -->
     <header class="text-center py-20 px-4">
-        
-        <!-- Welcome Message -->
         <h1 class="text-5xl font-extrabold text-gray-900 mb-6">
             <span x-show="!inviteAgencyName">Launch Your Ecommerce Empire</span>
             <span x-show="inviteAgencyName">Welcome to <span x-text="inviteAgencyName"></span></span>
         </h1>
-        
         <p class="text-xl text-gray-600 mb-8">
             <span x-show="!inviteAgencyName">Whether you are an Agency or a Store Owner, we provide the tools to scale.</span>
             <span x-show="inviteAgencyName">Create your account to access your store dashboard.</span>
         </p>
-        
         <button @click="openLogin=true" class="bg-gray-900 text-white px-8 py-4 rounded text-lg font-bold shadow-lg hover:bg-gray-800">
             <span x-show="inviteAgencyId">Create My Account</span>
             <span x-show="!inviteAgencyId">Create Agency Account</span>
@@ -47,20 +41,16 @@
     <div x-show="openLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
         <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full relative">
             <button @click="openLogin = false" class="absolute top-4 right-4 text-gray-400 text-xl">&times;</button>
-            
             <h2 class="text-2xl font-bold mb-6 text-center">
                 <span x-show="inviteAgencyName" x-text="inviteAgencyName + ' Login'"></span>
                 <span x-show="!inviteAgencyName">Platform Access</span>
             </h2>
-            
             <div x-show="error" class="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm" x-text="error"></div>
 
             <input type="email" x-model="email" placeholder="Email" class="w-full border p-3 rounded mb-3">
             <input type="password" x-model="password" placeholder="Password" class="w-full border p-3 rounded mb-4">
             
             <button @click="handleAuth('login')" class="w-full bg-gray-200 text-gray-800 py-2 rounded font-bold mb-2">Login</button>
-            
-            <!-- Only show Registration button if they are NOT just logging in -->
             <button @click="handleAuth('signup')" class="w-full bg-blue-600 text-white py-2 rounded font-bold">
                 <span x-show="inviteAgencyId">Create New Account</span>
                 <span x-show="!inviteAgencyId">Register as Agency</span>
@@ -79,10 +69,8 @@
                 async initApp() {
                     const params = new URLSearchParams(window.location.search);
                     const ref = params.get('ref');
-                    
                     if (ref) {
                         this.inviteAgencyId = ref;
-                        // Fetch Agency Name for White Labeling
                         try {
                             const db = firebase.firestore();
                             const doc = await db.collection('agencies').doc(ref).get();
@@ -91,7 +79,6 @@
                                 document.title = this.inviteAgencyName + " Login"; 
                             }
                         } catch(e) { console.error(e); }
-                        
                         this.openLogin = true; 
                     }
                 },
@@ -106,12 +93,22 @@
                         return;
                     }
 
+                    const db = firebase.firestore();
+
                     try {
                         if (action === 'signup') {
+                            // LIMIT CHECKER
+                            if (this.inviteAgencyId) {
+                                const snap = await db.collection('users').where('parentAgency', '==', this.inviteAgencyId).get();
+                                if (snap.size >= 100) {
+                                    this.error = "This Agency has reached its maximum user limit (100).";
+                                    return; 
+                                }
+                            }
+
                             const cred = await auth.createUserWithEmailAndPassword(cleanEmail, cleanPass);
                             
                             if (this.inviteAgencyId) {
-                                // REGISTER AS CLIENT
                                 await db.collection('users').doc(cred.user.uid).set({
                                     email: cleanEmail,
                                     parentAgency: this.inviteAgencyId,
@@ -121,38 +118,30 @@
                                 });
                                 window.location.href = 'client-dashboard.html';
                             } else {
-                                // REGISTER AS AGENCY
-                                // === THIS IS THE IMPORTANT FIX ===
                                 await db.collection('agencies').doc(cred.user.uid).set({
                                     email: cleanEmail,
                                     role: 'agency',
                                     agencyName: 'My Agency',
-                                    warningStatus: false, // <--- I ADDED THIS BACK
+                                    warningStatus: false,
+                                    blockedStatus: false,
                                     createdAt: new Date()
                                 });
                                 window.location.href = 'agency-dashboard.html';
                             }
                         } else {
-                            // LOGIN
                             const cred = await auth.signInWithEmailAndPassword(cleanEmail, cleanPass);
                             const uid = cred.user.uid;
                             
-                            // Super Admin Check
-                            if(cleanEmail === 'colombagesahan@gmail.com') { 
-                                window.location.href = 'super-admin.html'; 
-                                return; 
-                            }
+                            // CHANGE THIS TO YOUR EMAIL
+                            if(cleanEmail === 'colombagesahan@gmail.com') { window.location.href = 'super-admin.html'; return; }
 
-                            // Redirect based on role
                             const agencyDoc = await db.collection('agencies').doc(uid).get();
                             if (agencyDoc.exists) { window.location.href = 'agency-dashboard.html'; return; }
                             
                             const userDoc = await db.collection('users').doc(uid).get();
                             if (userDoc.exists) { window.location.href = 'client-dashboard.html'; return; }
                         }
-                    } catch (e) { 
-                        this.error = e.message; 
-                    }
+                    } catch (e) { this.error = e.message; }
                 }
             }
         }
