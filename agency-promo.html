@@ -6,6 +6,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -18,19 +19,25 @@
         <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600"></div>
     </div>
 
-    <!-- MAIN CONTENT (Dynamically styled based on Theme) -->
-    <div x-show="!loading && valid">
+    <!-- ERROR -->
+    <div x-show="!loading && !valid" class="h-screen flex flex-col items-center justify-center text-center px-4" style="display: none;">
+        <h1 class="text-3xl font-bold text-gray-400 mb-2">Agency Not Found</h1>
+        <a href="index.html" class="text-blue-600 underline">Go to Home</a>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div x-show="!loading && valid" style="display: none;">
         
-        <!-- THEME 1: MODERN BLUE (Default) -->
+        <!-- ============================================ -->
+        <!-- STYLE 1: MODERN BLUE (Default)               -->
+        <!-- ============================================ -->
         <div x-show="profile.theme === 'modern' || !profile.theme">
-            <!-- Navbar -->
             <nav class="bg-white/90 shadow fixed w-full z-40">
                 <div class="container mx-auto px-6 py-4 flex justify-between items-center">
                     <div class="text-2xl font-bold text-blue-900" x-text="profile.agencyName"></div>
                     <button @click="joinNow" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold">Start Selling</button>
                 </div>
             </nav>
-            <!-- Hero -->
             <header class="pt-32 pb-20 px-6 bg-gradient-to-br from-slate-900 to-blue-900 text-white text-center">
                 <h1 class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight" x-text="profile.heroTitle || 'Build Your Store With Us'"></h1>
                 <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto" x-text="profile.heroDesc || 'We provide products and logistics. You keep the profit.'"></p>
@@ -38,16 +45,16 @@
             </header>
         </div>
 
-        <!-- THEME 2: DARK LUXURY -->
+        <!-- ============================================ -->
+        <!-- STYLE 2: DARK LUXURY                         -->
+        <!-- ============================================ -->
         <div x-show="profile.theme === 'dark'" class="bg-black text-white">
-            <!-- Navbar -->
             <nav class="bg-black/90 border-b border-gray-800 fixed w-full z-40">
                 <div class="container mx-auto px-6 py-4 flex justify-between items-center">
                     <div class="text-2xl font-bold text-yellow-500" x-text="profile.agencyName"></div>
                     <button @click="joinNow" class="border border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black px-6 py-2 rounded font-bold transition">Join Exclusive</button>
                 </div>
             </nav>
-            <!-- Hero -->
             <header class="pt-32 pb-20 px-6 text-center bg-gray-900">
                 <h1 class="text-5xl md:text-7xl font-serif font-bold mb-6 text-yellow-500" x-text="profile.heroTitle || 'Premium Ecommerce Network'"></h1>
                 <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto italic" x-text="profile.heroDesc || 'Join an elite network of sellers.'"></p>
@@ -55,16 +62,16 @@
             </header>
         </div>
 
-        <!-- THEME 3: ENERGETIC ORANGE -->
+        <!-- ============================================ -->
+        <!-- STYLE 3: ENERGETIC ORANGE                    -->
+        <!-- ============================================ -->
         <div x-show="profile.theme === 'energetic'">
-            <!-- Navbar -->
             <nav class="bg-white shadow fixed w-full z-40">
                 <div class="container mx-auto px-6 py-4 flex justify-between items-center">
                     <div class="text-2xl font-black text-orange-600 uppercase" x-text="profile.agencyName"></div>
                     <button @click="joinNow" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-bold shadow">GET STARTED</button>
                 </div>
             </nav>
-            <!-- Hero -->
             <header class="pt-32 pb-20 px-6 bg-orange-500 text-white text-center">
                 <h1 class="text-5xl md:text-7xl font-black mb-6 uppercase transform -rotate-1" x-text="profile.heroTitle || 'Start Your Hustle'"></h1>
                 <p class="text-xl text-orange-100 mb-10 max-w-2xl mx-auto font-bold" x-text="profile.heroDesc || 'Turn clicks into cash with our platform.'"></p>
@@ -72,29 +79,107 @@
             </header>
         </div>
 
-        <!-- COMMON SECTIONS (Contact / About - Adapts to styles slightly or stays neutral) -->
-        <section id="contact" class="py-20 px-6 container mx-auto text-center">
-            <h2 class="text-3xl font-bold mb-8">Contact Us</h2>
-            <div class="flex flex-col md:flex-row justify-center gap-8">
-                <div x-show="profile.phone" class="p-6 border rounded shadow-sm">
-                    <i class="fas fa-phone text-2xl mb-2"></i>
-                    <p x-text="profile.phone"></p>
+        <!-- ============================================ -->
+        <!-- STYLE 4: CORPORATE PROFESSIONAL (NEW!)       -->
+        <!-- ============================================ -->
+        <div x-show="profile.theme === 'corporate'">
+            <nav class="bg-slate-900 fixed w-full z-40">
+                <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-building text-emerald-400 text-2xl"></i>
+                        <div class="text-xl font-semibold text-white tracking-wide" x-text="profile.agencyName"></div>
+                    </div>
+                    <button @click="joinNow" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded text-sm font-medium transition">Partner With Us</button>
                 </div>
-                <div x-show="profile.email" class="p-6 border rounded shadow-sm">
-                    <i class="fas fa-envelope text-2xl mb-2"></i>
-                    <p x-text="profile.email"></p>
+            </nav>
+            <header class="pt-32 pb-24 px-6 bg-slate-50 text-center">
+                <div class="max-w-4xl mx-auto">
+                    <span class="text-emerald-600 font-bold tracking-widest uppercase text-xs mb-4 block">Verified Agency Partner</span>
+                    <h1 class="text-4xl md:text-6xl font-bold mb-6 text-slate-800 leading-tight" x-text="profile.heroTitle || 'Professional Dropshipping Solutions'"></h1>
+                    <p class="text-lg text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed" x-text="profile.heroDesc || 'We offer a structured, scalable platform for serious entrepreneurs.'"></p>
+                    <div class="flex justify-center gap-4">
+                        <button @click="joinNow" class="bg-slate-900 hover:bg-slate-800 text-white py-3 px-8 rounded shadow-lg transition">Create Account</button>
+                        <a href="#contact" class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 py-3 px-8 rounded transition">Contact Support</a>
+                    </div>
                 </div>
-                <a x-show="profile.whatsapp" :href="'https://wa.me/' + cleanPhone(profile.whatsapp)" target="_blank" class="p-6 border rounded shadow-sm bg-green-50 text-green-700 cursor-pointer hover:bg-green-100">
-                    <i class="fab fa-whatsapp text-2xl mb-2"></i>
-                    <p>Chat on WhatsApp</p>
-                </a>
+            </header>
+        </div>
+
+        <!-- ============================================ -->
+        <!-- SHARED SECTIONS (Adapts to all styles)       -->
+        <!-- ============================================ -->
+        
+        <!-- About / Features -->
+        <section id="about" class="py-20 px-6 container mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-3xl font-bold mb-6 text-gray-900">About <span x-text="profile.agencyName"></span></h2>
+                    <p class="text-gray-600 mb-4 leading-relaxed">
+                        We are a registered business based in <strong x-text="profile.country || 'Global'"></strong>. 
+                        Led by <strong x-text="profile.ownerName || 'Management'"></strong>, we focus on operational excellence.
+                    </p>
+                    <ul class="space-y-3 mt-6">
+                        <li class="flex items-center text-gray-700"><i class="fas fa-check-circle text-green-500 mr-3"></i> Verified Business Registration</li>
+                        <li class="flex items-center text-gray-700"><i class="fas fa-check-circle text-green-500 mr-3"></i> Secure Payment Gateways</li>
+                        <li class="flex items-center text-gray-700"><i class="fas fa-check-circle text-green-500 mr-3"></i> 24/7 Dedicated Support</li>
+                    </ul>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-100 p-6 rounded-xl text-center">
+                        <i class="fas fa-globe text-3xl text-blue-500 mb-2"></i>
+                        <p class="font-bold text-sm">Global Reach</p>
+                    </div>
+                    <div class="bg-gray-100 p-6 rounded-xl text-center">
+                        <i class="fas fa-shield-alt text-3xl text-green-500 mb-2"></i>
+                        <p class="font-bold text-sm">Secure</p>
+                    </div>
+                    <div class="bg-gray-100 p-6 rounded-xl text-center">
+                        <i class="fas fa-bolt text-3xl text-yellow-500 mb-2"></i>
+                        <p class="font-bold text-sm">Fast Setup</p>
+                    </div>
+                    <div class="bg-gray-100 p-6 rounded-xl text-center">
+                        <i class="fas fa-headset text-3xl text-purple-500 mb-2"></i>
+                        <p class="font-bold text-sm">Support</p>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Footer -->
-        <footer class="py-8 text-center bg-gray-900 text-gray-500">
-            <p>&copy; <span x-text="profile.agencyName"></span></p>
-        </footer>
+        <!-- Contact Section -->
+        <section id="contact" class="py-20 bg-gray-900 text-white">
+            <div class="container mx-auto px-6 text-center">
+                <h2 class="text-3xl font-bold mb-8">Contact Our Team</h2>
+                <div class="flex flex-col md:flex-row justify-center gap-8 flex-wrap">
+                    
+                    <!-- Phone -->
+                    <div x-show="profile.phone" class="bg-gray-800 p-6 rounded-lg w-full md:w-64">
+                        <i class="fas fa-phone text-2xl mb-2 text-blue-400"></i>
+                        <p class="text-sm text-gray-400">Call Us</p>
+                        <p class="font-bold" x-text="profile.phone"></p>
+                    </div>
+
+                    <!-- Email -->
+                    <div x-show="profile.email" class="bg-gray-800 p-6 rounded-lg w-full md:w-64">
+                        <i class="fas fa-envelope text-2xl mb-2 text-blue-400"></i>
+                        <p class="text-sm text-gray-400">Email Us</p>
+                        <p class="font-bold" x-text="profile.email"></p>
+                    </div>
+
+                    <!-- WhatsApp -->
+                    <a x-show="profile.whatsapp" :href="'https://wa.me/' + cleanPhone(profile.whatsapp)" target="_blank" 
+                       class="bg-green-600 hover:bg-green-500 p-6 rounded-lg w-full md:w-64 cursor-pointer transition">
+                        <i class="fab fa-whatsapp text-2xl mb-2 text-white"></i>
+                        <p class="text-sm text-green-100">Chat Now</p>
+                        <p class="font-bold">WhatsApp</p>
+                    </a>
+                </div>
+
+                <!-- Footer Credits -->
+                <div class="mt-16 pt-8 border-t border-gray-800 text-gray-500 text-sm">
+                    <p>&copy; <span x-text="new Date().getFullYear()"></span> <span x-text="profile.agencyName"></span>. Powered by AgencyFlow.</p>
+                </div>
+            </div>
+        </section>
 
     </div>
 
@@ -114,7 +199,6 @@
                         
                         if(doc.exists) {
                             const data = doc.data();
-                            // Merge root data with profile
                             this.profile = { agencyName: data.agencyName, email: data.email, ...data.profile };
                             this.valid = true;
                             document.title = "Join " + (this.profile.agencyName || "Agency");
