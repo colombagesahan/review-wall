@@ -11,9 +11,21 @@
 </head>
 <body class="bg-white text-gray-800" x-data="promoPage()">
 
-    <div x-show="loading" class="h-screen flex items-center justify-center">Loading...</div>
+    <!-- Loading Screen -->
+    <div x-show="loading" class="h-screen flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+        <p class="text-gray-500">Loading Agency Details...</p>
+    </div>
 
-    <div x-show="!loading && valid">
+    <!-- Error Screen (Shows if ID is wrong or Rules are blocked) -->
+    <div x-show="!loading && !valid" class="h-screen flex flex-col items-center justify-center text-center px-4" style="display: none;">
+        <h1 class="text-3xl font-bold text-gray-400 mb-2">Agency Not Found</h1>
+        <p class="text-gray-500 mb-6" x-text="errorMessage">Please check the link and try again.</p>
+        <a href="index.html" class="text-blue-600 underline">Go to Home</a>
+    </div>
+
+    <!-- Main Content -->
+    <div x-show="!loading && valid" style="display: none;">
         <!-- Agency Hero -->
         <header class="bg-gray-900 text-white py-24 text-center px-4">
             <h1 class="text-5xl font-bold mb-4" x-text="data.agencyName"></h1>
@@ -26,20 +38,20 @@
         </header>
 
         <section class="container mx-auto py-16 px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div class="p-6 border rounded-xl shadow-sm">
-                <i class="fas fa-box text-4xl text-blue-500 mb-4"></i>
+            <div class="p-6 border rounded-xl shadow-sm hover:shadow-md transition">
+                <div class="text-4xl text-blue-500 mb-4">📦</div>
                 <h3 class="font-bold text-xl mb-2">Premium Products</h3>
                 <p class="text-gray-500">Access our curated catalog of high-converting items.</p>
             </div>
-            <div class="p-6 border rounded-xl shadow-sm">
-                <i class="fas fa-laptop-code text-4xl text-purple-500 mb-4"></i>
+            <div class="p-6 border rounded-xl shadow-sm hover:shadow-md transition">
+                <div class="text-4xl text-purple-500 mb-4">🚀</div>
                 <h3 class="font-bold text-xl mb-2">Instant Store</h3>
                 <p class="text-gray-500">Get your own ecommerce website generated instantly.</p>
             </div>
-            <div class="p-6 border rounded-xl shadow-sm">
-                <i class="fas fa-money-bill-wave text-4xl text-green-500 mb-4"></i>
+            <div class="p-6 border rounded-xl shadow-sm hover:shadow-md transition">
+                <div class="text-4xl text-green-500 mb-4">💸</div>
                 <h3 class="font-bold text-xl mb-2">Fast Payouts</h3>
-                <p class="text-gray-500">We handle the payments and pay you within 3 days.</p>
+                <p class="text-gray-500">We handle the supply chain. You focus on selling.</p>
             </div>
         </section>
     </div>
@@ -50,25 +62,43 @@
                 loading: true,
                 valid: false,
                 aid: null,
-                data: {},
+                data: { agencyName: 'Loading...' },
+                errorMessage: 'The link might be broken or the agency does not exist.',
 
                 async init() {
-                    const params = new URLSearchParams(window.location.search);
-                    this.aid = params.get('id');
-                    if(this.aid) {
+                    try {
+                        const params = new URLSearchParams(window.location.search);
+                        this.aid = params.get('id');
+
+                        if(!this.aid) {
+                            throw new Error("No Agency ID in URL");
+                        }
+
+                        // This line fails if Security Rules are wrong
                         const doc = await db.collection('agencies').doc(this.aid).get();
+                        
                         if(doc.exists) {
                             this.data = doc.data();
                             this.valid = true;
-                            document.title = "Join " + this.data.agencyName;
+                            document.title = "Join " + (this.data.agencyName || "Agency");
+                        } else {
+                            this.errorMessage = "This Agency ID does not exist in our database.";
                         }
+                    } catch (e) {
+                        console.error(e);
+                        // If permission denied, tell the user
+                        if(e.code === 'permission-denied') {
+                            this.errorMessage = "Security Error: Please update Firestore Rules to allow 'read: true' for agencies.";
+                        } else {
+                            this.errorMessage = e.message;
+                        }
+                    } finally {
+                        this.loading = false;
                     }
-                    this.loading = false;
                 },
 
                 joinNow() {
-                    // Redirects to index with the REF code so they sign up under this agency
-                    // FIX: Uses relative path to ensure it works on GitHub
+                    // Navigate to Index with REF code
                     const baseUrl = window.location.href.split('/').slice(0,-1).join('/');
                     window.location.href = `${baseUrl}/index.html?ref=${this.aid}`;
                 }
