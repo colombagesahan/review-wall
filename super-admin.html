@@ -75,9 +75,19 @@
                                         <p class="text-xs text-gray-500">Owed: <span class="text-green-400" x-text="'$' + d.amount"></span></p>
                                         <p class="text-xs text-red-400" x-text="'Agency ID: ' + d.agencyId"></p>
                                     </td>
-                                    <td class="p-3 text-right">
-                                        <button @click="warnAgency(d.agencyId)" class="bg-yellow-600 text-white px-2 py-1 rounded text-xs mb-1 block w-full hover:bg-yellow-500">Warn</button>
-                                        <button @click="banAgency(d.agencyId, d.id)" class="bg-red-600 text-white px-2 py-1 rounded text-xs block w-full hover:bg-red-500">Ban</button>
+                                    <td class="p-3 text-right space-y-2">
+                                        <!-- WARN BUTTON -->
+                                        <button @click="warnAgency(d.agencyId)" class="bg-yellow-600 text-white px-2 py-1 rounded text-xs block w-full hover:bg-yellow-500">
+                                            Send Warning
+                                        </button>
+                                        <!-- REMOVE WARNING BUTTON -->
+                                        <button @click="unwarnAgency(d.agencyId)" class="bg-green-700 text-white px-2 py-1 rounded text-xs block w-full hover:bg-green-600">
+                                            Remove Warning
+                                        </button>
+                                        <!-- BAN BUTTON -->
+                                        <button @click="banAgency(d.agencyId, d.id)" class="bg-red-600 text-white px-2 py-1 rounded text-xs block w-full hover:bg-red-500">
+                                            Ban Agency
+                                        </button>
                                     </td>
                                 </tr>
                             </template>
@@ -102,13 +112,12 @@
                 alertType: 'info',
 
                 init() {
-                    // Connect directly to window.db to ensure connection
+                    // Connect to DB locally to load disputes
                     const db = firebase.firestore();
                     
-                    // Fetch Disputes (Ordered by Date)
                     db.collection('disputes').get().then(snap => {
                         this.disputes = snap.docs.map(d => ({id: d.id, ...d.data()}))
-                            .sort((a,b) => b.date - a.date); // Sort newest first in JS
+                            .sort((a,b) => b.date - a.date);
                     });
                 },
 
@@ -119,6 +128,7 @@
 
                 async sendAlert() {
                     if(!this.alertMsg) return;
+                    const db = firebase.firestore(); // FIX: Define db inside function
                     
                     await db.collection('alerts').add({
                         message: this.alertMsg,
@@ -132,14 +142,29 @@
                 },
 
                 async warnAgency(id) {
-                    await db.collection('agencies').doc(id).update({ warningStatus: true });
-                    alert("Warning sent to Agency Dashboard.");
+                    const db = firebase.firestore(); // FIX: Define db inside function
+                    try {
+                        await db.collection('agencies').doc(id).update({ warningStatus: true });
+                        alert("Warning sent! The Agency dashboard will now turn RED.");
+                    } catch(e) {
+                        alert("Error: " + e.message);
+                    }
+                },
+
+                async unwarnAgency(id) {
+                    const db = firebase.firestore(); // FIX: Define db inside function
+                    try {
+                        await db.collection('agencies').doc(id).update({ warningStatus: false });
+                        alert("Warning removed. The Agency dashboard is normal again.");
+                    } catch(e) {
+                        alert("Error: " + e.message);
+                    }
                 },
 
                 async banAgency(agencyId, disputeId) {
+                    const db = firebase.firestore(); // FIX: Define db inside function
                     if(confirm("DANGER: This will delete the Agency account permanently. Continue?")) {
                         await db.collection('agencies').doc(agencyId).delete();
-                        // Close the dispute
                         await db.collection('disputes').doc(disputeId).delete();
                         alert("Agency Banned/Deleted.");
                         window.location.reload();
