@@ -3,10 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Join Our Agency</title>
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <!-- FIREBASE SCRIPTS (Order is Important) -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script> <!-- THIS WAS MISSING -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
+    <!-- Your Config -->
     <script src="firebase-config.js"></script>
 </head>
 <body class="bg-white text-gray-800" x-data="promoPage()">
@@ -17,7 +24,7 @@
         <p class="text-gray-500">Loading Agency Details...</p>
     </div>
 
-    <!-- Error Screen (Shows if ID is wrong or Rules are blocked) -->
+    <!-- Error Screen -->
     <div x-show="!loading && !valid" class="h-screen flex flex-col items-center justify-center text-center px-4" style="display: none;">
         <h1 class="text-3xl font-bold text-gray-400 mb-2">Agency Not Found</h1>
         <p class="text-gray-500 mb-6" x-text="errorMessage">Please check the link and try again.</p>
@@ -74,8 +81,8 @@
                             throw new Error("No Agency ID in URL");
                         }
 
-                        // This line fails if Security Rules are wrong
-                        const doc = await db.collection('agencies').doc(this.aid).get();
+                        // Use global 'db' from window
+                        const doc = await window.db.collection('agencies').doc(this.aid).get();
                         
                         if(doc.exists) {
                             this.data = doc.data();
@@ -86,7 +93,6 @@
                         }
                     } catch (e) {
                         console.error(e);
-                        // If permission denied, tell the user
                         if(e.code === 'permission-denied') {
                             this.errorMessage = "Security Error: Please update Firestore Rules to allow 'read: true' for agencies.";
                         } else {
