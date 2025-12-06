@@ -5,6 +5,7 @@
     <title>Agency Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -20,62 +21,225 @@
         <button @click="auth.signOut()" class="mt-8 underline">Logout</button>
     </div>
 
-    <!-- 2. NORMAL DASHBOARD -->
+    <!-- 2. MAIN DASHBOARD -->
     <div x-show="!blockedStatus" class="flex h-screen overflow-hidden">
         
-        <div class="w-64 bg-slate-900 text-white flex flex-col p-4">
-            <h1 class="text-2xl font-bold mb-8">Agency Admin</h1>
-            <p class="text-xs text-gray-500 mb-4 break-all">ID: <span x-text="uid"></span></p>
-            <nav class="space-y-2">
-                <a @click="switchTab('overview')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer">Overview</a>
-                <a @click="switchTab('clients')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer">Clients</a>
-                <a @click="switchTab('messages')" class="flex justify-between items-center p-3 rounded hover:bg-slate-800 cursor-pointer">
-                    <span>Messages</span>
-                    <span x-show="unreadCount > 0" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full" x-text="unreadCount"></span>
+        <!-- SIDEBAR -->
+        <div class="w-64 bg-slate-900 text-white flex flex-col shadow-2xl z-10">
+            <!-- Platform Branding -->
+            <div class="p-6 bg-slate-950 border-b border-slate-800">
+                <h1 class="text-2xl font-extrabold tracking-tight text-blue-500">AgencyFlow</h1>
+                <p class="text-[10px] text-gray-500 uppercase mt-1">Platform</p>
+            </div>
+
+            <!-- Agency Info -->
+            <div class="p-4 border-b border-slate-800 bg-slate-800/50">
+                <p class="font-bold text-white truncate" x-text="profile.agencyName || 'My Agency'"></p>
+                <p class="text-[10px] text-gray-400 font-mono break-all mt-1">ID: <span x-text="uid"></span></p>
+                <div class="mt-2 inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+                     :class="plan === 'unlimited' ? 'bg-purple-600 text-white' : 'bg-gray-600 text-gray-300'">
+                    <span x-text="plan === 'unlimited' ? 'Unlimited Plan' : 'Free Plan (Max 10)'"></span>
+                </div>
+            </div>
+            
+            <!-- Menu -->
+            <nav class="flex-1 p-2 space-y-1 overflow-y-auto">
+                <a @click="switchTab('profile')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer" :class="{'bg-blue-900': tab==='profile'}">
+                    <i class="fas fa-id-card w-6"></i> Agency Profile <span x-show="!isBasicProfileComplete" class="text-red-400 text-xs ml-2">●</span>
+                </a>
+                <a @click="switchTab('overview')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer" :class="{'bg-slate-800': tab==='overview'}">
+                    <i class="fas fa-home w-6"></i> Overview
+                </a>
+                <a @click="switchTab('clients')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer" :class="{'bg-slate-800': tab==='clients'}">
+                    <i class="fas fa-users w-6"></i> Clients
+                </a>
+                <a @click="switchTab('settings')" class="block p-3 rounded hover:bg-slate-800 cursor-pointer" :class="{'bg-slate-800': tab==='settings'}">
+                    <i class="fas fa-wallet w-6"></i> Payments
                 </a>
             </nav>
-            <button @click="auth.signOut()" class="mt-auto text-gray-400">Logout</button>
+            <button @click="auth.signOut()" class="p-4 text-gray-400 hover:text-white text-sm border-t border-slate-800">Logout</button>
         </div>
 
+        <!-- MAIN CONTENT -->
         <div class="flex-1 overflow-y-auto p-8 relative">
             
-            <!-- ALERTS -->
+            <!-- Admin Alerts -->
             <template x-for="alert in systemAlerts">
-                <div x-show="showAlert" class="mb-6 rounded-lg p-4 text-white shadow-lg flex justify-between items-center"
+                <div class="mb-4 rounded p-3 text-white text-sm font-bold flex justify-between items-center shadow"
                      :class="{'bg-blue-600': alert.type === 'info', 'bg-red-600': alert.type === 'urgent'}">
-                    <div>
-                        <span class="font-bold uppercase text-xs opacity-75 mr-2" x-text="alert.sender || 'System'"></span>
-                        <span class="font-bold" x-text="alert.message"></span>
-                    </div>
-                    <button @click="showAlert = false" class="text-xl font-bold opacity-50">&times;</button>
+                    <span x-text="alert.sender + ': ' + alert.message"></span>
+                    <button @click="closeAlert(alert)" class="text-white opacity-50 hover:opacity-100">&times;</button>
                 </div>
             </template>
 
-            <!-- WARNING BOX -->
-            <div x-show="warningStatus" x-cloak class="bg-red-600 text-white p-6 rounded-xl shadow-lg mb-8 border-4 border-red-800">
-                <h2 class="text-2xl font-bold">URGENT: PAYMENT WARNING</h2>
-                <p>Super Admin has flagged your account. Please pay your clients immediately.</p>
+            <!-- Warning Box -->
+            <div x-show="warningStatus" x-cloak class="bg-red-600 text-white p-6 rounded-xl shadow-lg mb-8 border-4 border-red-800 animate-pulse">
+                <h2 class="text-2xl font-bold">URGENT: ACCOUNT FLAGGED</h2>
+                <p>Super Admin has flagged your account. Please resolve outstanding payments immediately.</p>
             </div>
 
-            <div x-show="tab==='overview'">
-                <h2 class="text-3xl font-bold mb-6">Overview</h2>
-                <div class="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-600">
-                    <h3 class="font-bold text-lg mb-2">Recruitment Link</h3>
-                    <input readonly :value="promoLink" class="w-full bg-gray-100 border p-2 rounded text-sm">
+            <!-- ======================= -->
+            <!-- TAB: AGENCY PROFILE     -->
+            <!-- ======================= -->
+            <div x-show="tab==='profile'">
+                <h2 class="text-3xl font-bold mb-2">Agency Profile</h2>
+                <p class="text-gray-500 mb-6">Complete your profile to unlock features and verify your business.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    <!-- 1. BASIC DETAILS (REQUIRED FOR FREE PLAN) -->
+                    <div class="bg-white p-6 rounded shadow border-t-4 border-blue-500 h-fit">
+                        <h3 class="font-bold text-xl mb-4 flex items-center gap-2">
+                            1. Basic Details 
+                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Required</span>
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Agency Name *</label>
+                                <input x-model="profile.agencyName" class="w-full border p-2 rounded">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Residence Country *</label>
+                                <input x-model="profile.country" class="w-full border p-2 rounded">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Owner/Manager Name *</label>
+                                <input x-model="profile.ownerName" class="w-full border p-2 rounded">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Phone (with Country Code) *</label>
+                                <input x-model="profile.phone" class="w-full border p-2 rounded" placeholder="+1 234 567 890">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">WhatsApp Number *</label>
+                                <input x-model="profile.whatsapp" class="w-full border p-2 rounded" placeholder="+1 234 567 890">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Email Address *</label>
+                                <input x-model="profile.email" class="w-full border p-2 rounded bg-gray-100" readonly>
+                            </div>
+                            
+                            <!-- LEGAL AGREEMENT -->
+                            <div class="bg-gray-50 p-3 rounded border">
+                                <label class="flex items-start gap-2 cursor-pointer">
+                                    <input type="checkbox" x-model="profile.agreedLegal" class="mt-1">
+                                    <span class="text-xs text-gray-600">
+                                        I agree not to use this platform for scams or illegal activities. I will operate under my country's laws. 
+                                        <a href="legal.html" target="_blank" class="text-blue-600 underline">Read Legal Terms</a>.
+                                    </span>
+                                </label>
+                            </div>
+
+                            <button @click="saveBasicProfile" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded">
+                                Save Basic Profile
+                            </button>
+                            <p class="text-xs text-center text-gray-400 mt-2">Allows up to 10 Clients</p>
+                        </div>
+                    </div>
+
+                    <!-- 2. VERIFICATION (REQUIRED FOR UNLIMITED) -->
+                    <div class="bg-white p-6 rounded shadow border-t-4" :class="plan === 'unlimited' ? 'border-purple-500' : 'border-gray-300'">
+                        <h3 class="font-bold text-xl mb-4 flex items-center gap-2">
+                            2. Business Verification
+                            <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">For Unlimited</span>
+                        </h3>
+                        
+                        <div x-show="plan === 'unlimited'" class="bg-purple-100 text-purple-800 p-3 rounded mb-4 font-bold text-center">
+                            ✅ You are on the Unlimited Plan
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Target Countries</label>
+                                <input x-model="profile.targetCountries" class="w-full border p-2 rounded" placeholder="e.g. USA, UK, Global">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Agency Address</label>
+                                <input x-model="profile.address" class="w-full border p-2 rounded">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Google Profile Link</label>
+                                <input x-model="profile.gProfile" class="w-full border p-2 rounded" placeholder="https://...">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Google Map Code</label>
+                                <input x-model="profile.gMap" class="w-full border p-2 rounded">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Social Media Links</label>
+                                <input x-model="profile.socials" class="w-full border p-2 rounded" placeholder="FB, Insta, LinkedIn...">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500 uppercase">Upload BR Photo (Business Registration)</label>
+                                <input type="file" id="brUpload" class="w-full border p-2 rounded text-sm">
+                                <p class="text-[10px] text-gray-400 mt-1">Required for verification.</p>
+                            </div>
+
+                            <button x-show="plan !== 'unlimited'" @click="upgradePlan" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded flex justify-center items-center gap-2">
+                                <i class="fas fa-crown"></i> Upgrade to Unlimited ($10/mo)
+                            </button>
+                            
+                            <button x-show="plan === 'unlimited'" @click="saveFullProfile" class="w-full bg-gray-800 text-white py-2 rounded">
+                                Update Details
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            <!-- TAB: OVERVIEW -->
+            <div x-show="tab==='overview'">
+                <h2 class="text-3xl font-bold mb-6">Overview</h2>
+                
+                <!-- Limit Warning -->
+                <div x-show="clientCount >= 10 && plan === 'free'" class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
+                    <p class="font-bold">Plan Limit Reached!</p>
+                    <p>You have 10 clients. Please complete your profile and upgrade to add more.</p>
+                    <button @click="tab='profile'" class="mt-2 underline font-bold">Go to Profile</button>
+                </div>
+
+                <!-- Promo Link (Hidden if profile incomplete) -->
+                <div x-show="isBasicProfileComplete">
+                    <div class="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-600">
+                        <h3 class="font-bold text-lg mb-2">Your Promotional Website</h3>
+                        <p class="text-sm text-gray-500 mb-2">Share this link to recruit clients:</p>
+                        <div class="flex gap-2">
+                            <input readonly :value="promoLink" class="w-full bg-gray-100 border p-2 rounded text-sm text-gray-600">
+                            <a :href="promoLink" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Open</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="!isBasicProfileComplete" class="bg-gray-200 p-8 text-center rounded text-gray-500">
+                    <i class="fas fa-lock text-4xl mb-2"></i>
+                    <p class="font-bold">Promotional Link Locked</p>
+                    <p>Please complete your Basic Profile to start recruiting.</p>
+                    <button @click="tab='profile'" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded">Complete Profile</button>
+                </div>
+            </div>
+
+            <!-- TAB: CLIENTS -->
             <div x-show="tab==='clients'">
-                <h2 class="text-3xl font-bold mb-6">Clients</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-bold">Clients</h2>
+                    <span class="bg-gray-200 px-3 py-1 rounded font-bold text-sm">
+                        Total: <span x-text="clientCount"></span> / <span x-text="plan === 'unlimited' ? '∞' : '10'"></span>
+                    </span>
+                </div>
+                
                 <div class="bg-white rounded shadow overflow-hidden">
                     <table class="w-full text-left">
-                        <thead class="bg-gray-50"><tr><th class="p-4">Client</th><th class="p-4">Unpaid</th><th class="p-4">Action</th></tr></thead>
+                        <thead class="bg-gray-50"><tr><th class="p-4">Client</th><th class="p-4">Contact</th><th class="p-4">Unpaid</th><th class="p-4">Action</th></tr></thead>
                         <tbody>
                             <template x-for="c in clients">
                                 <tr class="border-t">
-                                    <td class="p-4" x-text="c.email"></td>
+                                    <td class="p-4">
+                                        <p class="font-bold" x-text="c.fullName || 'No Name'"></p>
+                                        <p class="text-xs text-gray-500" x-text="c.email"></p>
+                                    </td>
+                                    <td class="p-4" x-text="c.phone || '-'"></td>
                                     <td class="p-4 font-bold text-green-600" x-text="'$' + (c.unpaidEarnings || 0)"></td>
-                                    <td class="p-4"><button @click="markPaid(c)" class="bg-green-600 text-white px-3 py-1 rounded text-sm">Mark Paid</button></td>
+                                    <td class="p-4"><button @click="markPaid(c)" class="bg-green-600 text-white px-3 py-1 rounded text-xs">Mark Paid</button></td>
                                 </tr>
                             </template>
                         </tbody>
@@ -83,33 +247,16 @@
                 </div>
             </div>
 
-            <div x-show="tab==='messages'">
-                <h2 class="text-3xl font-bold mb-6">Message Center</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- SEND -->
-                    <div class="bg-white p-6 rounded shadow h-fit">
-                        <h3 class="font-bold text-lg mb-4">Send Message</h3>
-                        <textarea x-model="msgText" class="w-full border p-3 rounded mb-4 h-32"></textarea>
-                        <select x-model="msgTarget" class="w-full border p-3 rounded mb-4">
-                            <option value="all_my_clients">All My Clients</option>
-                            <template x-for="c in clients"><option :value="c.id" x-text="c.email"></option></template>
-                        </select>
-                        <button @click="sendMessage" class="bg-blue-600 text-white px-6 py-2 rounded font-bold w-full">Send Message</button>
-                    </div>
-                    <!-- INBOX -->
-                    <div class="bg-white p-6 rounded shadow">
-                        <h3 class="font-bold text-lg mb-4">Inbox</h3>
-                        <div class="space-y-3 h-96 overflow-y-auto pr-2">
-                            <template x-for="m in myMessages">
-                                <div class="p-4 border rounded-lg shadow-sm" :class="{'bg-blue-50': m.type==='info', 'bg-red-50': m.type==='urgent'}">
-                                    <div class="flex justify-between items-start mb-1">
-                                        <span class="font-bold text-sm" x-text="m.sender || 'System'"></span>
-                                    </div>
-                                    <p class="text-sm text-gray-800" x-text="m.message"></p>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
+            <!-- TAB: SETTINGS (Payments) -->
+            <div x-show="tab==='settings'">
+                <h2 class="text-3xl font-bold mb-6">Payment Gateways</h2>
+                <div class="bg-white p-6 rounded shadow max-w-lg space-y-4">
+                    <p class="text-sm text-gray-500">Configure how your clients accept payments.</p>
+                    <input x-model="paymentData.paypal" placeholder="PayPal Email" class="w-full border p-2 rounded">
+                    <input x-model="paymentData.stripe" placeholder="Stripe Key" class="w-full border p-2 rounded">
+                    <input x-model="paymentData.payhere" placeholder="PayHere Merchant ID" class="w-full border p-2 rounded">
+                    <textarea x-model="paymentData.bank" placeholder="Bank Details" class="w-full border p-2 rounded" rows="3"></textarea>
+                    <button @click="savePayments" class="bg-slate-900 text-white px-6 py-2 rounded w-full font-bold">Save Payment Methods</button>
                 </div>
             </div>
 
@@ -120,65 +267,150 @@
         function agencyApp() {
             return {
                 tab: 'overview', uid: null, promoLink: '',
-                clients: [], systemAlerts: [], showAlert: true, myMessages: [],
-                msgText: '', msgTarget: 'all_my_clients', warningStatus: false, blockedStatus: false, unreadCount: 0,
+                clients: [], clientCount: 0,
+                systemAlerts: [], warningStatus: false, blockedStatus: false,
+                
+                // Profile & Plan
+                plan: 'free', // 'free' or 'unlimited'
+                profile: {
+                    agencyName: '', country: '', ownerName: '', phone: '', whatsapp: '', email: '', agreedLegal: false,
+                    targetCountries: '', address: '', gProfile: '', gMap: '', socials: '', brPhotoUrl: ''
+                },
+                isBasicProfileComplete: false,
+                
+                // Payment Settings
+                paymentData: { paypal: '', stripe: '', payhere: '', bank: '' },
 
                 init() {
                     auth.onAuthStateChanged(user => {
                         if(user) {
                             this.uid = user.uid;
+                            this.profile.email = user.email; // Auto-fill email
                             this.promoLink = window.location.href.split('/').slice(0,-1).join('/') + `/agency-promo.html?id=${this.uid}`;
-                            this.listenData(); this.loadClients(); this.listenMessages();
+                            
+                            this.listenData();
+                            this.loadClients();
+                            this.listenMessages();
                         } else window.location.href='index.html';
                     });
                 },
 
-                switchTab(newTab) {
-                    this.tab = newTab;
-                    if(newTab === 'messages') this.unreadCount = 0;
-                },
+                switchTab(t) { this.tab = t; },
 
                 listenData() {
-                    firebase.firestore().collection('agencies').doc(this.uid).onSnapshot(doc => {
+                    const db = firebase.firestore();
+                    db.collection('agencies').doc(this.uid).onSnapshot(doc => {
                         if(doc.exists) {
-                            this.warningStatus = doc.data().warningStatus;
-                            this.blockedStatus = doc.data().blockedStatus;
+                            const data = doc.data();
+                            this.warningStatus = data.warningStatus;
+                            this.blockedStatus = data.blockedStatus;
+                            this.plan = data.plan || 'free';
+                            
+                            // Load Payment Methods
+                            if(data.paymentMethods) this.paymentData = data.paymentMethods;
+
+                            // Load Profile Data
+                            if(data.profile) {
+                                this.profile = { ...this.profile, ...data.profile };
+                                this.checkBasicProfile();
+                            }
                         }
                     });
                 },
 
+                checkBasicProfile() {
+                    const p = this.profile;
+                    if(p.agencyName && p.country && p.ownerName && p.phone && p.whatsapp && p.agreedLegal) {
+                        this.isBasicProfileComplete = true;
+                    } else {
+                        this.isBasicProfileComplete = false;
+                    }
+                },
+
                 async loadClients() {
-                    const snap = await firebase.firestore().collection('users').where('parentAgency', '==', this.uid).get();
+                    const db = firebase.firestore();
+                    const snap = await db.collection('users').where('parentAgency', '==', this.uid).get();
                     this.clients = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                    this.clientCount = this.clients.length;
                 },
 
                 listenMessages() {
-                    firebase.firestore().collection('alerts').orderBy('createdAt', 'desc').limit(20).onSnapshot(snap => {
-                        const allDocs = snap.docs.map(d => d.data());
-                        const broadcasts = allDocs.filter(a => a.target === 'all' || a.target === 'agencies');
-                        if(broadcasts.length > 0) this.systemAlerts = [broadcasts[0]];
-                        
-                        const inbox = allDocs.filter(a => a.target === this.uid);
-                        if(inbox.length > this.myMessages.length && this.tab !== 'messages') this.unreadCount = inbox.length - this.myMessages.length;
-                        this.myMessages = inbox;
-                    });
-                },
-
-                async sendMessage() {
-                    if(!this.msgText) return;
                     const db = firebase.firestore();
-                    const target = this.msgTarget === 'all_my_clients' ? 'broadcast_' + this.uid : this.msgTarget;
-                    await db.collection('alerts').add({
-                        message: this.msgText, target: target, sender: 'Agency Admin', type: 'info', createdAt: new Date()
-                    });
-                    this.msgText = ''; alert("Sent!");
+                    db.collection('alerts').where('target', 'in', ['all', 'agencies', this.uid])
+                      .orderBy('createdAt', 'desc').limit(5)
+                      .onSnapshot(snap => {
+                          this.systemAlerts = snap.docs.map(d => d.data());
+                      });
                 },
 
-                async markPaid(client) {
+                // --- PROFILE FUNCTIONS ---
+                async saveBasicProfile() {
+                    const p = this.profile;
+                    if(!p.agencyName || !p.country || !p.ownerName || !p.phone || !p.whatsapp) {
+                        return alert("Please fill all REQUIRED fields marked with *");
+                    }
+                    if(!p.agreedLegal) return alert("You must agree to the legal terms.");
+
+                    const db = firebase.firestore();
+                    await db.collection('agencies').doc(this.uid).update({
+                        agencyName: p.agencyName, // Update root level for white-label
+                        profile: this.profile
+                    });
+                    this.checkBasicProfile();
+                    alert("Basic Profile Saved! You can now recruit clients.");
+                },
+
+                async upgradePlan() {
+                    // 1. Validation
+                    const p = this.profile;
+                    if(!p.targetCountries || !p.address || !p.gProfile || !p.gMap || !p.socials) {
+                        return alert("Please fill all Business Verification details to upgrade.");
+                    }
+                    
+                    const fileInput = document.getElementById('brUpload');
+                    if(fileInput.files.length === 0 && !p.brPhotoUrl) {
+                        return alert("Please upload your Business Registration Photo.");
+                    }
+
+                    // 2. Mock BR Upload (Just saving file name for now)
+                    if(fileInput.files.length > 0) {
+                        this.profile.brPhotoUrl = "uploaded_" + fileInput.files[0].name;
+                    }
+
+                    // 3. Mock Paddle Payment
+                    if(confirm("Opening Payment Gateway (Paddle)...\nPay $10/month for Unlimited Access?")) {
+                        // Simulate Payment Success
+                        const db = firebase.firestore();
+                        await db.collection('agencies').doc(this.uid).update({
+                            plan: 'unlimited',
+                            profile: this.profile
+                        });
+                        alert("Upgrade Successful! You now have unlimited clients.");
+                    }
+                },
+
+                async saveFullProfile() {
+                    const db = firebase.firestore();
+                    await db.collection('agencies').doc(this.uid).update({ profile: this.profile });
+                    alert("Profile Updated.");
+                },
+
+                async savePayments() {
+                    const db = firebase.firestore();
+                    await db.collection('agencies').doc(this.uid).update({ paymentMethods: this.paymentData });
+                    alert("Payment Methods Saved!");
+                },
+
+                async markPaid(c) {
+                    const db = firebase.firestore();
                     if(confirm("Mark paid?")) {
-                        await firebase.firestore().collection('users').doc(client.id).update({ unpaidEarnings: 0 });
+                        await db.collection('users').doc(c.id).update({ unpaidEarnings: 0 });
                         this.loadClients();
                     }
+                },
+                
+                closeAlert(alertItem) {
+                    this.systemAlerts = this.systemAlerts.filter(a => a !== alertItem);
                 }
             }
         }
