@@ -9,6 +9,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="firebase-config.js"></script>
+
+    <!-- FIX: This prevents the "Flash" of red box -->
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans" x-data="agencyApp()">
 
@@ -37,8 +42,9 @@
 
         <div class="flex-1 overflow-y-auto p-8">
             
-            <!-- SUPER ADMIN WARNING (Specific to this user) -->
-            <div x-show="warningStatus" class="bg-red-600 text-white p-6 rounded-xl shadow-lg mb-8 animate-pulse">
+            <!-- SUPER ADMIN WARNING -->
+            <!-- FIX: Added 'x-cloak' to hide this until data is loaded -->
+            <div x-show="warningStatus" x-cloak class="bg-red-600 text-white p-6 rounded-xl shadow-lg mb-8 animate-pulse">
                 <h2 class="text-2xl font-bold">URGENT: PAYMENT WARNING</h2>
                 <p class="mt-2">Super Admin has flagged your account for missing Client Payouts. Please clear all dues immediately.</p>
             </div>
@@ -126,12 +132,11 @@
                 // LOAD ALERTS FROM ADMIN
                 async loadAlerts() {
                     const snap = await db.collection('alerts').get();
-                    // Filter in JS to avoid complex index requirements for now
                     this.systemAlerts = snap.docs
                         .map(d => d.data())
                         .filter(a => a.target === 'all' || a.target === 'agencies')
-                        .sort((a,b) => b.createdAt - a.createdAt) // Newest first
-                        .slice(0, 1); // Only show the latest 1
+                        .sort((a,b) => b.createdAt - a.createdAt)
+                        .slice(0, 1);
                 },
 
                 async saveSettings() {
