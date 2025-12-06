@@ -3,241 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <title>Join Our Team</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- FIREBASE SCRIPTS -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    
-    <!-- Your Config -->
     <script src="firebase-config.js"></script>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans" x-data="promoPage()">
+<body class="font-sans text-gray-800" x-data="promoPage()">
 
-    <!-- 1. LOADING SCREEN -->
-    <div x-show="loading" class="h-screen flex flex-col items-center justify-center bg-white z-50 fixed inset-0">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 border-opacity-50"></div>
-        <p class="text-gray-500 mt-4 animate-pulse">Loading Agency Profile...</p>
+    <!-- LOADING -->
+    <div x-show="loading" class="h-screen flex items-center justify-center bg-white fixed inset-0 z-50">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-600"></div>
     </div>
 
-    <!-- 2. ERROR SCREEN -->
-    <div x-show="!loading && !valid" class="h-screen flex flex-col items-center justify-center text-center px-4" style="display: none;">
-        <i class="fas fa-exclamation-circle text-6xl text-red-400 mb-4"></i>
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Agency Not Found</h1>
-        <p class="text-gray-500 mb-6" x-text="errorMessage">Please check the link and try again.</p>
-        <a href="index.html" class="text-blue-600 underline hover:text-blue-800">Return to Platform</a>
-    </div>
-
-    <!-- 3. MAIN CONTENT -->
-    <div x-show="!loading && valid" style="display: none;">
+    <!-- MAIN CONTENT (Dynamically styled based on Theme) -->
+    <div x-show="!loading && valid">
         
-        <!-- NAVBAR -->
-        <nav class="bg-white/90 backdrop-blur-md shadow-sm fixed w-full z-40 transition-all duration-300">
-            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-                <div class="text-2xl font-extrabold text-blue-900 tracking-tight" x-text="profile.agencyName || 'Agency Name'"></div>
-                <div class="hidden md:flex space-x-8 font-medium text-gray-600">
-                    <a href="#home" class="hover:text-blue-600 transition">Home</a>
-                    <a href="#features" class="hover:text-blue-600 transition">Why Us?</a>
-                    <a href="#about" class="hover:text-blue-600 transition">About</a>
-                    <a href="#contact" class="hover:text-blue-600 transition">Contact</a>
+        <!-- THEME 1: MODERN BLUE (Default) -->
+        <div x-show="profile.theme === 'modern' || !profile.theme">
+            <!-- Navbar -->
+            <nav class="bg-white/90 shadow fixed w-full z-40">
+                <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                    <div class="text-2xl font-bold text-blue-900" x-text="profile.agencyName"></div>
+                    <button @click="joinNow" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold">Start Selling</button>
                 </div>
-                <button @click="joinNow" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-bold shadow-lg transition transform hover:scale-105">
-                    Start Selling
-                </button>
-            </div>
-        </nav>
-
-        <!-- HERO SECTION -->
-        <section id="home" class="pt-32 pb-20 px-6 bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white text-center relative overflow-hidden">
-            <!-- Background Decoration -->
-            <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                <i class="fas fa-globe text-9xl absolute -top-10 -left-10"></i>
-                <i class="fas fa-shopping-cart text-9xl absolute bottom-10 right-10"></i>
-            </div>
-
-            <div class="relative z-10 max-w-4xl mx-auto">
-                <span class="bg-blue-500/20 text-blue-200 text-sm font-bold px-4 py-1 rounded-full uppercase tracking-wider mb-6 inline-block">
-                    Official Dropshipping Partner
-                </span>
-                <h1 class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight">
-                    Build Your Store with <br>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-400" x-text="profile.agencyName"></span>
-                </h1>
-                <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto">
-                    We provide the products, logistics, and payments. You customize your store and keep the profit. Join our exclusive network today.
-                </p>
-                <div class="flex flex-col md:flex-row gap-4 justify-center">
-                    <button @click="joinNow" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-full shadow-xl transition transform hover:-translate-y-1 text-lg">
-                        <i class="fas fa-rocket mr-2"></i> Launch My Store
-                    </button>
-                    <a href="#contact" class="bg-transparent border border-white/30 hover:bg-white/10 text-white font-bold py-4 px-10 rounded-full transition">
-                        Contact Us
-                    </a>
-                </div>
-            </div>
-        </section>
-
-        <!-- STATS BANNER -->
-        <div class="bg-white shadow-lg relative z-20 -mt-8 mx-6 md:mx-20 rounded-xl p-8 grid grid-cols-1 md:grid-cols-3 gap-8 text-center border border-gray-100">
-            <div>
-                <i class="fas fa-box-open text-4xl text-blue-500 mb-2"></i>
-                <h3 class="font-bold text-gray-800">Premium Catalog</h3>
-                <p class="text-sm text-gray-500">Access to high-quality products</p>
-            </div>
-            <div>
-                <i class="fas fa-shipping-fast text-4xl text-purple-500 mb-2"></i>
-                <h3 class="font-bold text-gray-800">Fast Shipping</h3>
-                <p class="text-sm text-gray-500">Global delivery network</p>
-            </div>
-            <div>
-                <i class="fas fa-hand-holding-dollar text-4xl text-green-500 mb-2"></i>
-                <h3 class="font-bold text-gray-800">Secure Payments</h3>
-                <p class="text-sm text-gray-500">Guaranteed payouts</p>
-            </div>
+            </nav>
+            <!-- Hero -->
+            <header class="pt-32 pb-20 px-6 bg-gradient-to-br from-slate-900 to-blue-900 text-white text-center">
+                <h1 class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight" x-text="profile.heroTitle || 'Build Your Store With Us'"></h1>
+                <p class="text-xl text-gray-300 mb-10 max-w-2xl mx-auto" x-text="profile.heroDesc || 'We provide products and logistics. You keep the profit.'"></p>
+                <button @click="joinNow" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-10 rounded-full text-lg shadow-lg">Launch My Store</button>
+            </header>
         </div>
 
-        <!-- FEATURES SECTION -->
-        <section id="features" class="py-20 px-6 container mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl font-bold text-gray-900 mb-4">Why Choose Us?</h2>
-                <p class="text-gray-600 max-w-2xl mx-auto">We streamline the entire ecommerce process so you can focus on marketing and sales.</p>
-            </div>
+        <!-- THEME 2: DARK LUXURY -->
+        <div x-show="profile.theme === 'dark'" class="bg-black text-white">
+            <!-- Navbar -->
+            <nav class="bg-black/90 border-b border-gray-800 fixed w-full z-40">
+                <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                    <div class="text-2xl font-bold text-yellow-500" x-text="profile.agencyName"></div>
+                    <button @click="joinNow" class="border border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-black px-6 py-2 rounded font-bold transition">Join Exclusive</button>
+                </div>
+            </nav>
+            <!-- Hero -->
+            <header class="pt-32 pb-20 px-6 text-center bg-gray-900">
+                <h1 class="text-5xl md:text-7xl font-serif font-bold mb-6 text-yellow-500" x-text="profile.heroTitle || 'Premium Ecommerce Network'"></h1>
+                <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto italic" x-text="profile.heroDesc || 'Join an elite network of sellers.'"></p>
+                <button @click="joinNow" class="bg-yellow-600 hover:bg-yellow-500 text-black font-bold py-4 px-10 rounded text-lg">Apply Now</button>
+            </header>
+        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Card 1 -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition border border-gray-100 group">
-                    <div class="bg-blue-100 w-14 h-14 rounded-lg flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition">
-                        <i class="fas fa-laptop-code text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Instant Store Builder</h3>
-                    <p class="text-gray-500">No coding required. Use our drag-and-drop tools to launch your branded website in minutes.</p>
+        <!-- THEME 3: ENERGETIC ORANGE -->
+        <div x-show="profile.theme === 'energetic'">
+            <!-- Navbar -->
+            <nav class="bg-white shadow fixed w-full z-40">
+                <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                    <div class="text-2xl font-black text-orange-600 uppercase" x-text="profile.agencyName"></div>
+                    <button @click="joinNow" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-bold shadow">GET STARTED</button>
                 </div>
-                <!-- Card 2 -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition border border-gray-100 group">
-                    <div class="bg-teal-100 w-14 h-14 rounded-lg flex items-center justify-center text-teal-600 mb-6 group-hover:bg-teal-600 group-hover:text-white transition">
-                        <i class="fas fa-users text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">Dedicated Support</h3>
-                    <p class="text-gray-500">Our team is here to help you succeed. Direct chat support with <span x-text="profile.agencyName"></span> management.</p>
-                </div>
-                <!-- Card 3 -->
-                <div class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition border border-gray-100 group">
-                    <div class="bg-purple-100 w-14 h-14 rounded-lg flex items-center justify-center text-purple-600 mb-6 group-hover:bg-purple-600 group-hover:text-white transition">
-                        <i class="fas fa-chart-line text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">High Margins</h3>
-                    <p class="text-gray-500">We offer competitive base prices, allowing you to set healthy profit margins on every sale.</p>
-                </div>
-            </div>
-        </section>
+            </nav>
+            <!-- Hero -->
+            <header class="pt-32 pb-20 px-6 bg-orange-500 text-white text-center">
+                <h1 class="text-5xl md:text-7xl font-black mb-6 uppercase transform -rotate-1" x-text="profile.heroTitle || 'Start Your Hustle'"></h1>
+                <p class="text-xl text-orange-100 mb-10 max-w-2xl mx-auto font-bold" x-text="profile.heroDesc || 'Turn clicks into cash with our platform.'"></p>
+                <button @click="joinNow" class="bg-white text-orange-600 hover:bg-gray-100 font-bold py-4 px-10 rounded-full text-lg shadow-xl">JOIN THE TEAM</button>
+            </header>
+        </div>
 
-        <!-- ABOUT US SECTION (Dynamic) -->
-        <section id="about" class="py-20 bg-gray-100">
-            <div class="container mx-auto px-6 flex flex-col md:flex-row items-center gap-12">
-                <div class="md:w-1/2">
-                    <div class="bg-white p-2 rounded-lg shadow-lg rotate-2">
-                        <!-- Placeholder for Business Registration or Office Photo -->
-                        <div class="bg-gray-300 h-64 w-full rounded flex items-center justify-center text-gray-500">
-                            <i class="fas fa-building text-6xl"></i>
-                        </div>
-                    </div>
+        <!-- COMMON SECTIONS (Contact / About - Adapts to styles slightly or stays neutral) -->
+        <section id="contact" class="py-20 px-6 container mx-auto text-center">
+            <h2 class="text-3xl font-bold mb-8">Contact Us</h2>
+            <div class="flex flex-col md:flex-row justify-center gap-8">
+                <div x-show="profile.phone" class="p-6 border rounded shadow-sm">
+                    <i class="fas fa-phone text-2xl mb-2"></i>
+                    <p x-text="profile.phone"></p>
                 </div>
-                <div class="md:w-1/2">
-                    <h2 class="text-3xl font-bold mb-6 text-gray-900">About <span x-text="profile.agencyName"></span></h2>
-                    <p class="text-gray-600 mb-4 leading-relaxed">
-                        We are a registered business based in <strong x-text="profile.country || 'Global'"></strong>, dedicated to empowering entrepreneurs. 
-                        Led by <strong x-text="profile.ownerName || 'Our Manager'"></strong>, we have built a reputation for reliability and quality service.
-                    </p>
-                    <p class="text-gray-600 mb-6 leading-relaxed">
-                        Our mission is to remove the barriers to entry for ecommerce. We handle the inventory, so you don't have to.
-                    </p>
-                    
-                    <ul class="space-y-3 mb-8">
-                        <li class="flex items-center text-gray-700">
-                            <i class="fas fa-check-circle text-green-500 mr-3"></i> Verified Business
-                        </li>
-                        <li class="flex items-center text-gray-700">
-                            <i class="fas fa-check-circle text-green-500 mr-3"></i> Operating in <span x-text="profile.targetCountries || 'Global Markets'"></span>
-                        </li>
-                    </ul>
-
-                    <button @click="joinNow" class="text-blue-600 font-bold hover:underline">Join our team &rarr;</button>
+                <div x-show="profile.email" class="p-6 border rounded shadow-sm">
+                    <i class="fas fa-envelope text-2xl mb-2"></i>
+                    <p x-text="profile.email"></p>
                 </div>
+                <a x-show="profile.whatsapp" :href="'https://wa.me/' + cleanPhone(profile.whatsapp)" target="_blank" class="p-6 border rounded shadow-sm bg-green-50 text-green-700 cursor-pointer hover:bg-green-100">
+                    <i class="fab fa-whatsapp text-2xl mb-2"></i>
+                    <p>Chat on WhatsApp</p>
+                </a>
             </div>
         </section>
 
-        <!-- CONTACT SECTION (Dynamic) -->
-        <section id="contact" class="py-20 px-6 container mx-auto">
-            <div class="bg-blue-900 rounded-3xl p-10 md:p-16 text-white shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-                
-                <div class="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12">
-                    <div>
-                        <h2 class="text-3xl font-bold mb-6">Get in Touch</h2>
-                        <p class="text-blue-200 mb-8">Have questions before joining? Contact our team directly.</p>
-                        
-                        <div class="space-y-6">
-                            <!-- Phone -->
-                            <div class="flex items-start gap-4">
-                                <div class="bg-blue-800 p-3 rounded-lg"><i class="fas fa-phone-alt"></i></div>
-                                <div>
-                                    <p class="text-xs text-blue-300 uppercase">Call Us</p>
-                                    <p class="font-bold text-lg" x-text="profile.phone || 'Not Listed'"></p>
-                                </div>
-                            </div>
-                            
-                            <!-- Email -->
-                            <div class="flex items-start gap-4">
-                                <div class="bg-blue-800 p-3 rounded-lg"><i class="fas fa-envelope"></i></div>
-                                <div>
-                                    <p class="text-xs text-blue-300 uppercase">Email Us</p>
-                                    <p class="font-bold text-lg" x-text="profile.email"></p>
-                                </div>
-                            </div>
-
-                            <!-- Address -->
-                            <div class="flex items-start gap-4" x-show="profile.address">
-                                <div class="bg-blue-800 p-3 rounded-lg"><i class="fas fa-map-marker-alt"></i></div>
-                                <div>
-                                    <p class="text-xs text-blue-300 uppercase">Visit Us</p>
-                                    <p class="font-bold text-lg" x-text="profile.address"></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Socials & Actions -->
-                    <div class="flex flex-col justify-center space-y-6">
-                        
-                        <!-- WhatsApp Button -->
-                        <a x-show="profile.whatsapp" :href="'https://wa.me/' + cleanPhone(profile.whatsapp)" target="_blank" 
-                           class="bg-green-500 hover:bg-green-600 text-white py-4 px-6 rounded-xl font-bold flex items-center justify-center gap-3 transition shadow-lg">
-                            <i class="fab fa-whatsapp text-2xl"></i> Chat on WhatsApp
-                        </a>
-
-                        <div class="bg-blue-800/50 p-6 rounded-xl border border-blue-700">
-                            <p class="mb-4 font-bold">Connect on Social Media</p>
-                            <p class="text-sm text-blue-200 mb-4" x-text="profile.socials || 'Social links not provided yet.'"></p>
-                            <!-- If user provided links -->
-                            <div x-show="profile.gProfile" class="mt-4">
-                                <a :href="profile.gProfile" target="_blank" class="text-white hover:text-blue-200 underline">View Google Profile</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- FOOTER -->
-        <footer class="bg-slate-900 text-slate-400 py-10 text-center border-t border-slate-800">
-            <p>&copy; <span x-text="new Date().getFullYear()"></span> <span x-text="profile.agencyName"></span>. All rights reserved.</p>
-            <p class="text-sm mt-2">Powered by AgencyFlow Platform.</p>
+        <!-- Footer -->
+        <footer class="py-8 text-center bg-gray-900 text-gray-500">
+            <p>&copy; <span x-text="profile.agencyName"></span></p>
         </footer>
 
     </div>
@@ -245,47 +101,26 @@
     <script>
         function promoPage() {
             return {
-                loading: true,
-                valid: false,
-                aid: null,
-                data: {},
-                profile: {}, // Flattened profile data for easier access
-                errorMessage: 'The link might be broken or the agency does not exist.',
+                loading: true, valid: false, aid: null, profile: {},
 
                 async init() {
                     try {
                         const params = new URLSearchParams(window.location.search);
                         this.aid = params.get('id');
+                        if(!this.aid) throw new Error("No ID");
 
-                        if(!this.aid) throw new Error("No Agency ID in URL");
-
-                        // Direct Firestore connection
                         const db = firebase.firestore(); 
                         const doc = await db.collection('agencies').doc(this.aid).get();
                         
                         if(doc.exists) {
-                            this.data = doc.data();
-                            
-                            // Merge root data and profile data
-                            this.profile = { 
-                                agencyName: this.data.agencyName, 
-                                email: this.data.email,
-                                ...this.data.profile 
-                            };
-                            
+                            const data = doc.data();
+                            // Merge root data with profile
+                            this.profile = { agencyName: data.agencyName, email: data.email, ...data.profile };
                             this.valid = true;
-                            document.title = "Join " + (this.data.agencyName || "Agency");
-                        } else {
-                            this.errorMessage = "This Agency ID does not exist in our database.";
+                            document.title = "Join " + (this.profile.agencyName || "Agency");
                         }
-                    } catch (e) {
-                        console.error(e);
-                        this.errorMessage = e.code === 'permission-denied' 
-                            ? "Security Error: Please update Firestore Rules." 
-                            : "System Error: " + e.message;
-                    } finally {
-                        this.loading = false;
-                    }
+                    } catch (e) { console.error(e); } 
+                    finally { this.loading = false; }
                 },
 
                 joinNow() {
@@ -293,11 +128,7 @@
                     window.location.href = `${baseUrl}/index.html?ref=${this.aid}`;
                 },
 
-                // Helper to clean phone number for WhatsApp link
-                cleanPhone(phone) {
-                    if(!phone) return '';
-                    return phone.replace(/[^0-9]/g, '');
-                }
+                cleanPhone(phone) { return phone ? phone.replace(/[^0-9]/g, '') : ''; }
             }
         }
     </script>
